@@ -1,0 +1,3327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Violation Notice Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #fe2c55;
+      --primary-light: rgba(254,44,85,.12);
+      --primary-dark: #d4183a;
+      --text: #161823;
+      --text-secondary: #666;
+      --text-muted: #999;
+      --border: #e8e8e8;
+      --bg: #f7f7f7;
+      --white: #fff;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #e5e5e5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 0;
+    }
+
+    /* ── Phone frame (iPhone 17: 402 × 874 points) ── */
+    .phone {
+      width: 402px;
+      height: 874px;
+      max-height: 874px;
+      background: var(--white);
+      border-radius: 48px;
+      box-shadow: 0 20px 80px rgba(0,0,0,.25), 0 0 0 1px rgba(0,0,0,.08);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Dynamic Island */
+    .phone::before {
+      content: '';
+      position: absolute;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      width: 120px; height: 34px;
+      background: #000;
+      border-radius: 100px;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    /* ── Status bar (accommodates Dynamic Island) ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 30px 10px;
+      flex-shrink: 0;
+      min-height: 54px;
+    }
+    .status-bar.dark { background: #1a1a1a; color: white; }
+    .status-bar.light { background: var(--white); color: var(--text); }
+    .status-time { font-size: 15px; font-weight: 600; letter-spacing: -.3px; }
+    .status-icons { display: flex; align-items: center; gap: 6px; }
+
+    /* ── All screens ── */
+    .app-screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .app-screen.active { display: flex; }
+
+    /* Smooth scrolling for all scroll containers */
+    .end-stream-scroll,
+    .detail-scroll,
+    .inbox-list,
+    .notif-list,
+    .chat-messages,
+    .punish-content,
+    .restriction-content {
+      scroll-behavior: smooth;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* ── Topbar (white screens) — sticky/pinned ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px 8px;
+      flex-shrink: 0;
+      background: var(--white);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      transition: box-shadow .2s, background .2s;
+    }
+    .topbar.scrolled {
+      box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      background: rgba(255,255,255,.96);
+      backdrop-filter: saturate(180%) blur(10px);
+      -webkit-backdrop-filter: saturate(180%) blur(10px);
+    }
+    .topbar-center {
+      flex: 1;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .topbar-right {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      min-width: 36px;
+      text-align: right;
+    }
+    .back-btn {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border-radius: 50%;
+      transition: background .15s;
+      -webkit-tap-highlight-color: transparent;
+      font-size: 22px; color: var(--text);
+    }
+    .back-btn:active { background: rgba(0,0,0,.05); }
+
+    /* ═══════════════════════════════
+       SCREEN: 关播页 (End Stream Page) — DARK
+    ═══════════════════════════════ */
+    /* ═══════════════════════════════
+       END STREAM PAGE (light theme)
+    ═══════════════════════════════ */
+    .end-stream-top {
+      position: relative;
+      padding: 4px 20px 0;
+    }
+    /* Sticky header row: × and LIVE Center */
+    .end-stream-header-row {
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 6px 20px;
+      background: #f5f5f5;
+      transition: box-shadow .2s, background .2s;
+    }
+    .end-stream-header-row.scrolled {
+      background: rgba(245,245,245,.96);
+      backdrop-filter: saturate(180%) blur(10px);
+      -webkit-backdrop-filter: saturate(180%) blur(10px);
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+    .end-stream-close {
+      font-size: 26px; cursor: pointer; color: var(--text);
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .end-stream-live-center {
+      background: rgba(0,0,0,.06);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 13px; font-weight: 600;
+      color: var(--text);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .end-stream-duration {
+      font-size: 13px; color: var(--text-muted);
+      margin-top: 12px;
+    }
+    .end-stream-congrats {
+      font-size: 30px; font-weight: 800;
+      color: var(--text);
+      margin-top: 2px;
+    }
+    .end-stream-subtitle {
+      font-size: 14px; color: var(--text-muted);
+      margin-top: 2px; margin-bottom: 16px;
+    }
+    .end-stream-scroll {
+      flex: 1; overflow-y: auto; padding: 0 0 24px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .end-stream-scroll::-webkit-scrollbar { display: none; }
+
+    /* Section cards */
+    .es-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 0 16px 10px;
+    }
+    .es-card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px;
+    }
+    .es-card-title { font-size: 16px; font-weight: 700; color: var(--text); }
+    .es-card-arrow { color: var(--text-muted); font-size: 18px; cursor: pointer; }
+    .es-card-sub { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    /* Stats row */
+    .es-stats {
+      display: flex;
+      padding: 16px 20px;
+      margin: 0 16px 10px;
+      background: var(--white);
+      border-radius: 12px;
+    }
+    .es-stat { flex: 1; }
+    .es-stat-num { font-size: 24px; font-weight: 700; color: var(--text); }
+    .es-stat-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Rewards */
+    .es-rewards {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 0 16px 10px;
+    }
+    .es-rewards-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+    .es-rewards-amounts {
+      display: flex; gap: 24px; align-items: center; margin-bottom: 8px;
+    }
+    .es-rewards-col {}
+    .es-rewards-amount { font-size: 24px; font-weight: 700; color: var(--text); }
+    .es-rewards-label { font-size: 12px; color: var(--text-muted); }
+    .es-rewards-diamonds { font-size: 13px; color: var(--text-muted); }
+
+    /* Restrictions card */
+    .es-restrictions {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 0 16px 10px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .es-restrictions:active { background: #fafafa; }
+
+    /* Replay thumb */
+    .es-replay {
+      display: flex; align-items: center; gap: 12px;
+      margin-top: 10px;
+    }
+    .es-replay-thumb {
+      width: 72px; height: 72px; border-radius: 8px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; flex-shrink: 0;
+    }
+    .es-replay-info {}
+    .es-replay-title { font-size: 15px; font-weight: 600; color: var(--text); }
+    .es-replay-meta { font-size: 13px; color: var(--text-muted); }
+
+    /* Campaigns */
+    .es-campaign-item {
+      display: flex; align-items: center; gap: 12px;
+      margin-top: 10px;
+    }
+    .es-campaign-icon {
+      width: 56px; height: 56px; border-radius: 12px;
+      background: rgba(254,44,85,.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .es-campaign-text { flex: 1; }
+    .es-campaign-text-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .es-campaign-text-sub { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+    /* LIVE experience rating */
+    .es-experience {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 0 16px 10px;
+    }
+    .es-experience-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+    .es-experience-faces {
+      display: flex; justify-content: space-around;
+      margin-bottom: 14px;
+    }
+    .es-face {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      cursor: pointer;
+    }
+    .es-face-icon {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: #f0f0f0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .es-face-label { font-size: 12px; color: var(--text-muted); }
+    .es-experience-note {
+      font-size: 12px; color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .es-experience-note strong { color: var(--text); font-weight: 600; }
+
+    /* LIVE Journey card */
+    .es-journey-stage {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 4px;
+    }
+    .es-journey-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .es-journey-dot.active { background: #007aff; }
+    .es-journey-dot.inactive { background: #d4d4d4; }
+    .es-journey-text { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+
+    /* ═══════════════════════════════
+       SCREEN: Restrictions Inbox
+    ═══════════════════════════════ */
+    .inbox-screen { background: #f5f5f5; }
+
+    .inbox-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--white);
+    }
+    .inbox-tab {
+      flex: 1;
+      text-align: center;
+      padding: 12px 0 10px;
+      font-size: 15px; font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .inbox-tab.active {
+      color: var(--text);
+    }
+    .inbox-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 20%; right: 20%;
+      height: 2.5px;
+      background: var(--text);
+      border-radius: 2px;
+    }
+
+    .inbox-list {
+      flex: 1; overflow-y: auto;
+      padding: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .inbox-list::-webkit-scrollbar { display: none; }
+
+    .inbox-item {
+      padding: 16px 20px 0;
+      border-bottom: none;
+      background: var(--white);
+    }
+    .inbox-item-main {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .inbox-item-header {
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .inbox-item-icon {
+      width: 24px; height: 24px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      margin-top: 1px;
+    }
+    .inbox-item-content { flex: 1; }
+    .inbox-item-title {
+      font-size: 14px; font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .inbox-item-reason {
+      font-size: 13px; color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .inbox-item-date {
+      font-size: 13px; color: var(--text-muted);
+    }
+    .inbox-item-badge {
+      display: inline-block;
+      font-size: 12px; font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(0,0,0,.06);
+      color: var(--text-secondary);
+      margin-top: 6px;
+    }
+    .inbox-item-actions {
+      display: flex; justify-content: flex-end;
+      padding: 10px 0 0;
+    }
+    .inbox-view-details {
+      font-size: 13px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 4px;
+      cursor: pointer;
+    }
+    .inbox-tutorials {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    .inbox-tutorials-text {
+      font-size: 15px; font-weight: 600; color: var(--text);
+    }
+    .inbox-tutorials-arrow {
+      font-size: 16px; color: var(--text-muted);
+    }
+    .inbox-divider {
+      height: 8px;
+      background: #ebebeb;
+    }
+    .inbox-footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 13px;
+      color: var(--text-muted);
+      background: #f5f5f5;
+    }
+
+    /* ═══════════════════════════════
+       SCREEN: Restriction Details
+    ═══════════════════════════════ */
+    .detail-screen { background: var(--white); }
+    .detail-scroll {
+      flex: 1; overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .detail-scroll::-webkit-scrollbar { display: none; }
+
+    .detail-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 20px 20px;
+      background: var(--white);
+    }
+    .detail-hero-icon {
+      width: 80px; height: 80px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+      position: relative;
+      background: #f0f0f0;
+      border-radius: 16px;
+    }
+    .detail-hero-icon-main {
+      font-size: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .detail-hero-icon-main svg {
+      width: 44px; height: 44px;
+    }
+    .detail-hero-icon-badge {
+      position: absolute;
+      bottom: -2px; right: -4px;
+      font-size: 18px;
+      background: white;
+      border-radius: 50%;
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .detail-hero-title {
+      font-size: 22px; font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .detail-section {
+      background: #f5f5f5;
+      border-radius: 12px;
+      margin: 0 20px 12px;
+      padding: 16px;
+    }
+    .detail-section-title {
+      font-size: 15px; font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .detail-section-text {
+      font-size: 14px; color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .detail-section-date {
+      font-size: 14px; color: var(--text-secondary);
+    }
+
+    /* LIVE details card in restriction detail */
+    .detail-live-card {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .detail-live-info { flex: 1; }
+    .detail-live-name {
+      font-size: 15px; font-weight: 600; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .detail-live-meta {
+      font-size: 13px; color: var(--text-muted);
+    }
+    .detail-live-thumb {
+      width: 64px; height: 64px;
+      border-radius: 8px;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .detail-live-thumb-inner {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+    }
+    .thumb-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .thumb-2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .thumb-3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .thumb-4 { background: linear-gradient(135deg, #fa709a, #fee140); }
+    .thumb-5 { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+
+    /* Video clip passthrough */
+    .detail-video-section {
+      padding: 0 20px 12px;
+      background: transparent;
+    }
+    .video-placeholder {
+      width: 100%;
+      aspect-ratio: 16/9;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .video-bg {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      background-color: #000;
+    }
+    .video-person { font-size: 64px; opacity: .35; filter: grayscale(1); }
+    .video-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .play-btn {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: rgba(255,255,255,.25);
+      border: 2.5px solid rgba(255,255,255,.7);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .play-btn::after {
+      content: '';
+      width: 0; height: 0;
+      border-style: solid;
+      border-width: 10px 0 10px 18px;
+      border-color: transparent transparent transparent white;
+      margin-left: 4px;
+    }
+    .video-timestamp {
+      position: absolute; bottom: 10px; left: 10px;
+      background: rgba(0,0,0,.55);
+      color: white;
+      font-size: 11px; font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .video-muted-badge {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(0,0,0,.55);
+      color: white; font-size: 11px;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    .video-clip-hint {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 8px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .clip-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--primary);
+      animation: clipPulse 1.5s infinite;
+    }
+    @keyframes clipPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .3; }
+    }
+
+    .grad-1 { background: linear-gradient(135deg, #2c3e50, #4a6fa5, #2c3e50); }
+    .grad-2 { background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); }
+    .grad-3 { background: linear-gradient(135deg, #2d4a22, #1a3a1a, #0d2b0d); }
+    .grad-4 { background: linear-gradient(135deg, #3d1a1a, #5c2a2a, #4a1f1f); }
+    .grad-5 { background: linear-gradient(135deg, #1e1e3a, #2a1a4a, #1a0d2e); }
+
+    /* Feedback section */
+    .detail-feedback {
+      padding: 16px;
+      background: #f5f5f5;
+      border-radius: 12px;
+      margin: 0 20px 12px;
+    }
+    .feedback-label {
+      font-size: 15px; font-weight: 700; color: var(--text);
+      margin-bottom: 4px;
+    }
+    .feedback-desc {
+      font-size: 13px; color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .feedback-btns { display: flex; gap: 12px; }
+    .feedback-btn {
+      flex: 1;
+      height: 40px; border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: white;
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px;
+      font-size: 14px; font-weight: 500; color: var(--text);
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .feedback-btn:active, .feedback-btn.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    /* Bottom CTA */
+    .detail-bottom {
+      padding: 12px 20px 20px;
+      background: white;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .detail-bottom-link {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .detail-bottom-link strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+    .detail-bottom-btns {
+      display: flex; gap: 10px;
+      margin-top: 12px;
+    }
+    .btn-primary {
+      flex: 1; height: 48px;
+      background: var(--primary);
+      color: white;
+      border: none; border-radius: 8px;
+      font-size: 16px; font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-primary:active { background: var(--primary-dark); }
+    .btn-secondary-outline {
+      flex: 1; height: 48px;
+      background: transparent;
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px; font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-secondary-outline:active { background: #f5f5f5; }
+
+    /* ═══════════════════════════════
+       SCREEN: AI Chat
+    ═══════════════════════════════ */
+    .chat-screen { background: var(--white); }
+
+    .chat-topbar {
+      display: flex; align-items: center;
+      padding: 8px 16px 8px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0; gap: 8px;
+    }
+    .chat-topbar-title {
+      font-size: 16px; font-weight: 700; color: var(--text);
+      flex: 1;
+    }
+    .chat-topbar-badge {
+      font-size: 11px; font-weight: 600;
+      padding: 3px 10px; border-radius: 100px;
+    }
+
+    .chat-context {
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .chat-context-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+    .chat-context-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+    .chat-context-reason { font-size: 13px; font-weight: 700; color: var(--text); }
+    .chat-context-chevron {
+      font-size: 13px; color: var(--text-muted);
+      transition: transform .25s; margin-left: 6px;
+    }
+    .chat-context-chevron.open { transform: rotate(180deg); }
+    .chat-context-body {
+      overflow: hidden; max-height: 0;
+      transition: max-height .3s ease;
+      padding: 0 16px;
+    }
+    .chat-context-body.open { max-height: 280px; padding-bottom: 12px; }
+
+    .chat-video-wrap {
+      position: relative; width: 100%; aspect-ratio: 16/9;
+      border-radius: 10px; overflow: hidden;
+      cursor: pointer; margin-bottom: 8px; user-select: none;
+    }
+    .chat-video-bg {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .chat-video-icon { font-size: 52px; opacity: .3; filter: grayscale(1); }
+    .chat-video-ts {
+      position: absolute; bottom: 8px; left: 8px;
+      background: rgba(0,0,0,.55); color: white;
+      font-size: 10px; font-weight: 500;
+      padding: 2px 6px; border-radius: 3px;
+    }
+    .chat-clip-hint {
+      font-size: 11px; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center; gap: 4px;
+      margin-bottom: 4px;
+    }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto;
+      padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .chat-messages::-webkit-scrollbar { display: none; }
+
+    .agent-row { display: flex; align-items: flex-start; gap: 8px; }
+    .agent-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #ff6b8a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0; margin-top: 2px;
+    }
+    .bubble-ai {
+      max-width: 80%; background: #f2f2f2;
+      border-radius: 18px 18px 18px 4px;
+      padding: 10px 14px;
+      font-size: 14px; color: var(--text); line-height: 1.55;
+    }
+    .bubble-ai strong { color: var(--text); }
+    .bubble-user {
+      align-self: flex-end; max-width: 78%;
+      background: var(--primary-light);
+      border: 1px solid rgba(254,44,85,.2);
+      border-radius: 18px 18px 4px 18px;
+      padding: 10px 14px;
+      font-size: 14px; color: var(--text); line-height: 1.55;
+    }
+
+    .typing-indicator { display: flex; align-items: flex-start; gap: 8px; }
+    .typing-dots {
+      background: #f2f2f2;
+      border-radius: 18px 18px 18px 4px;
+      padding: 12px 16px;
+      display: flex; gap: 5px; align-items: center;
+    }
+    .typing-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #bbb;
+      animation: typingBounce 1.2s infinite ease-in-out;
+    }
+    .typing-dot:nth-child(2) { animation-delay: .2s; }
+    .typing-dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes typingBounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+
+    .quick-replies {
+      flex-shrink: 0;
+      padding: 10px 16px 12px;
+      display: flex; flex-direction: column; gap: 8px;
+      border-top: 1px solid var(--border);
+      background: white;
+    }
+    .quick-reply-btn {
+      width: 100%; padding: 11px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px; background: white;
+      font-size: 14px; color: var(--text);
+      text-align: left; cursor: pointer;
+      transition: background .15s, border-color .15s;
+      line-height: 1.4;
+    }
+    .quick-reply-btn:active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .quick-reply-btn:disabled { opacity: .38; cursor: not-allowed; }
+    .quick-reply-btn.danger {
+      border-color: rgba(254,44,85,.3);
+      color: var(--primary);
+      background: rgba(254,44,85,.04);
+    }
+    .quick-reply-btn.lowlight {
+      border-color: var(--border);
+      color: var(--text-muted);
+      background: transparent;
+      font-size: 13px;
+    }
+    .quick-reply-btn.lowlight:active {
+      background: #f5f5f5;
+      border-color: #ccc;
+      color: var(--text-secondary);
+    }
+    .quick-replies-label {
+      font-size: 12px; color: var(--text-muted);
+      font-weight: 500; margin-bottom: 2px;
+    }
+
+    /* ── Chat text input bar ── */
+    .chat-input-bar {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px 14px;
+      background: white;
+      border-top: 1px solid var(--border);
+    }
+    .chat-input-wrap {
+      flex: 1;
+      display: flex; align-items: center; gap: 8px;
+      background: #f2f2f2;
+      border-radius: 22px;
+      padding: 8px 14px;
+    }
+    .chat-input {
+      flex: 1;
+      border: none; outline: none;
+      background: transparent;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      min-width: 0;
+    }
+    .chat-input::placeholder { color: var(--text-muted); }
+    .chat-input-send {
+      width: 34px; height: 34px;
+      border: none; border-radius: 50%;
+      background: var(--primary); color: white;
+      font-size: 18px; font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background .15s, opacity .15s;
+    }
+    .chat-input-send:disabled {
+      background: #e0e0e0; color: #999;
+      cursor: not-allowed;
+    }
+    .chat-input-send:not(:disabled):active { background: var(--primary-dark); }
+
+    .appeal-banner {
+      margin: 0 16px 4px;
+      background: white;
+      border: 1.5px solid var(--primary);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: none;
+      animation: slideUp .35s ease;
+    }
+    .appeal-banner.visible { display: block; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .appeal-banner-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .appeal-banner-desc {
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.5; margin-bottom: 12px;
+    }
+    .appeal-banner-btn {
+      width: 100%; height: 46px;
+      background: var(--primary); color: white;
+      border: none; border-radius: 8px;
+      font-size: 16px; font-weight: 600;
+      cursor: pointer;
+    }
+    .appeal-banner-btn:active { background: var(--primary-dark); }
+
+    /* ═══════════════════════════════
+       SCREEN: System Notifications
+    ═══════════════════════════════ */
+    .notif-screen { background: #f0f5f0; }
+    .notif-tabs {
+      display: flex; gap: 8px;
+      padding: 12px 20px 8px;
+      flex-shrink: 0;
+      background: #f0f5f0;
+    }
+    .notif-tab {
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 13px; font-weight: 600;
+      color: var(--text-secondary);
+      background: var(--white);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .notif-tab.active {
+      background: rgba(0,200,150,.12);
+      color: #00a67e;
+      border-color: rgba(0,200,150,.3);
+    }
+    .notif-list {
+      flex: 1; overflow-y: auto;
+      padding: 8px 16px 24px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .notif-list::-webkit-scrollbar { display: none; }
+    .notif-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: box-shadow .15s;
+    }
+    .notif-card:active { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .notif-card-category {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 8px;
+    }
+    .notif-cat-icon {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(0,200,150,.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+    }
+    .notif-cat-text {
+      font-size: 13px; font-weight: 600; color: var(--text-secondary);
+    }
+    .notif-card-title {
+      font-size: 17px; font-weight: 700; color: var(--text);
+      margin-bottom: 6px;
+    }
+    .notif-card-body {
+      font-size: 13px; color: var(--text-muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .notif-card-date {
+      font-size: 12px; color: var(--text-muted);
+      display: inline;
+    }
+    .notif-card-more {
+      font-size: 14px; font-weight: 600; color: var(--text);
+      margin-top: 10px;
+    }
+
+    /* ── AI-powered Restriction Details (new demo pattern) ── */
+    .ai-desc-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 100px;
+      background: linear-gradient(135deg, #a18cd1, #fbc2eb);
+      color: white;
+      letter-spacing: .3px;
+    }
+    .ai-desc-panel {
+      margin-top: 8px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .ai-desc-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, #a18cd1, #fbc2eb, #fe2c55);
+    }
+    .ai-desc-body {
+      font-size: 13px; color: var(--text);
+      line-height: 1.65;
+    }
+    .ai-desc-body strong { color: var(--primary); font-weight: 700; }
+    .ai-desc-body .ai-insight-row {
+      display: flex; gap: 8px; align-items: flex-start;
+      margin-top: 8px;
+    }
+    .ai-desc-body .ai-insight-row:first-child { margin-top: 0; }
+    .ai-desc-body .ai-insight-icon {
+      font-size: 14px; flex-shrink: 0; margin-top: 1px;
+    }
+    .ai-desc-body .ai-insight-cite {
+      display: inline-block;
+      font-size: 11px; color: var(--primary);
+      background: var(--primary-light);
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-right: 4px;
+      font-weight: 600;
+    }
+    /* Embedded agent-entry buttons inside the AI Restriction Details panel */
+    .ai-desc-actions {
+      margin-top: 14px; padding-top: 12px;
+      border-top: 1px dashed var(--border);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .ai-desc-action-btn {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px; background: white;
+      font-size: 13px; color: var(--text);
+      text-align: left; cursor: pointer;
+      transition: background .15s, border-color .15s;
+      font-family: inherit;
+    }
+    .ai-desc-action-btn:active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .ai-desc-action-btn.lowlight {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+    .ai-desc-action-btn.lowlight:active {
+      background: #f5f5f5;
+      border-color: #ccc;
+      color: var(--text-secondary);
+    }
+
+    /* ── AI Stream section ── */
+    .ai-stream-section {
+      margin: 0 20px 12px;
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 14px 16px;
+      animation: slideUp .35s ease;
+    }
+    .ai-stream-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .ai-stream-body {
+      font-size: 14px; color: var(--text);
+      line-height: 1.6;
+    }
+    .ai-stream-body .stream-typing {
+      display: inline-flex; gap: 4px; align-items: center;
+      padding: 2px 0;
+    }
+    .ai-stream-body .stream-typing .typing-dot {
+      width: 5px; height: 5px;
+    }
+    .ai-stream-options {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .ai-stream-opt-btn {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px; background: white;
+      font-size: 13px; color: var(--text);
+      text-align: left; cursor: pointer;
+      transition: background .15s, border-color .15s;
+      line-height: 1.4;
+    }
+    .ai-stream-opt-btn:active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .ai-stream-opt-btn.lowlight {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+    .ai-stream-opt-btn.lowlight:active {
+      background: #f5f5f5;
+      border-color: #ccc;
+      color: var(--text-secondary);
+    }
+    .ai-stream-cursor {
+      display: inline-block;
+      width: 2px; height: 14px;
+      background: var(--primary);
+      margin-left: 1px;
+      animation: blink 0.8s infinite;
+      vertical-align: text-bottom;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* ── Appeal reason modal ── */
+    .appeal-modal-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.5);
+      display: none;
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .appeal-modal-overlay.active { display: flex; }
+    .appeal-modal {
+      width: 100%;
+      background: #f7f7f7;
+      border-radius: 20px 20px 0 0;
+      padding: 16px 20px 24px;
+      max-height: 85%;
+      overflow-y: auto;
+      animation: slideUpModal .3s ease;
+    }
+    @keyframes slideUpModal {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .appeal-modal-close {
+      position: absolute; top: 12px; right: 16px;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: var(--text);
+      cursor: pointer;
+      background: transparent; border: none;
+    }
+    .appeal-modal-title {
+      font-size: 18px; font-weight: 700; color: var(--text);
+      text-align: center;
+      margin: 8px 0 20px;
+    }
+    .appeal-reason-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 16px;
+      background: var(--white);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .appeal-reason-text {
+      flex: 1;
+      font-size: 14px; color: var(--text);
+      line-height: 1.4;
+    }
+    .appeal-reason-radio {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 1.5px solid #c7c7c7;
+      flex-shrink: 0; margin-top: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .appeal-reason-item.selected .appeal-reason-radio {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .appeal-reason-item.selected .appeal-reason-radio::after {
+      content: '✓';
+      color: white; font-size: 13px; font-weight: 700;
+    }
+    .appeal-submit-btn {
+      width: 100%; height: 50px;
+      background: var(--primary); color: white;
+      border: none; border-radius: 10px;
+      font-size: 16px; font-weight: 600;
+      margin-top: 16px;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .appeal-submit-btn:disabled {
+      opacity: .4; cursor: not-allowed;
+    }
+
+    /* ── Video Player Screen ── */
+    .player-screen {
+      background: #000;
+      position: relative;
+    }
+    .player-topbar {
+      position: absolute; top: 0; left: 0; right: 0;
+      display: flex; align-items: center;
+      padding: 8px 16px;
+      z-index: 10;
+    }
+    .player-back {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border-radius: 50%;
+      font-size: 22px; color: white;
+      background: rgba(0,0,0,.3);
+    }
+    .player-title {
+      flex: 1; text-align: center;
+      font-size: 15px; font-weight: 600; color: white;
+    }
+    .player-video-wrap {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .player-video-wrap video {
+      max-width: 100%; max-height: 100%;
+      object-fit: contain;
+    }
+    .player-timestamp {
+      position: absolute; bottom: 60px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.6);
+      color: white; font-size: 13px; font-weight: 600;
+      padding: 4px 14px; border-radius: 20px;
+      font-variant-numeric: tabular-nums;
+      z-index: 10;
+    }
+    .player-violation-bar {
+      position: absolute; bottom: 20px; left: 16px; right: 16px;
+      background: rgba(254,44,85,.9);
+      color: white; font-size: 12px; font-weight: 600;
+      padding: 8px 14px; border-radius: 8px;
+      text-align: center;
+      z-index: 10;
+    }
+
+    /* Responsive */
+    @media (max-width: 430px) {
+      body { padding: 0; background: white; }
+      .phone { width: 100%; height: 100vh; max-height: 100vh; border-radius: 0; box-shadow: none; }
+      .phone::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- STATUS BAR (dynamic) -->
+  <div class="status-bar light" id="status-bar">
+    <span class="status-time">8:00</span>
+    <div class="status-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+        <rect x="0" y="7" width="3" height="5" rx="1" fill="currentColor"/>
+        <rect x="4.5" y="5" width="3" height="7" rx="1" fill="currentColor"/>
+        <rect x="9" y="2.5" width="3" height="9.5" rx="1" fill="currentColor"/>
+        <rect x="13.5" y="0" width="3" height="12" rx="1" fill="currentColor"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <path d="M8 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" fill="currentColor"/>
+        <path d="M1.5 5.5C3.3 3.7 5.5 2.7 8 2.7s4.7 1 6.5 2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+        <path d="M4.2 8.2C5.3 7.1 6.6 6.5 8 6.5s2.7.6 3.8 1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+      </svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+        <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="currentColor" stroke-opacity=".35"/>
+        <rect x="2" y="2" width="16" height="8" rx="2" fill="currentColor"/>
+        <path d="M23 4.5v3a1.5 1.5 0 000-3z" fill="currentColor" fill-opacity=".4"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SCREEN: System Notifications
+  ═══════════════════════════════ -->
+  <div class="app-screen" id="screen-notifications" style="background:#f0f5f0;">
+    <div class="topbar" style="background:#f0f5f0;">
+      <div class="back-btn" onclick="showToast('Back to app')">‹</div>
+      <div class="topbar-center">System notifications</div>
+      <div style="width:36px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted);cursor:pointer;">⚙</div>
+    </div>
+    <div class="notif-tabs">
+      <div class="notif-tab">Promote Assistant</div>
+      <div class="notif-tab active">Account updates</div>
+      <div class="notif-tab">LIVE</div>
+    </div>
+    <div class="notif-list">
+      <!-- LIVE violation — links to restriction flow -->
+      <div class="notif-card" onclick="goToEndStream()">
+        <div class="notif-card-category">
+          <div class="notif-cat-icon">⬆</div>
+          <span class="notif-cat-text">Account updates</span>
+        </div>
+        <div class="notif-card-title">LIVE violation</div>
+        <div class="notif-card-body">
+          Your LIVE "Evening Stream" streamed on 04/13/2026 at 10:00AM has been restricted because of a violation: Sexually Suggestive Content ... <span style="color:var(--text-muted);">∨</span> <span class="notif-card-date">5d</span>
+        </div>
+        <div class="notif-card-more">View more</div>
+      </div>
+
+      <div class="notif-card" onclick="showToast('Account update')">
+        <div class="notif-card-category">
+          <div class="notif-cat-icon">⬆</div>
+          <span class="notif-cat-text">Account updates</span>
+        </div>
+        <div class="notif-card-title">You can now log in with your email</div>
+        <div class="notif-card-body">
+          Your Google account's email address has been added to your TikTok account. You can now log in or recover your account with it. <span class="notif-card-date">Sep 24, 2025</span>
+        </div>
+        <div class="notif-card-more">View more</div>
+      </div>
+
+      <div class="notif-card" onclick="showToast('Account update')">
+        <div class="notif-card-category">
+          <div class="notif-cat-icon">⬆</div>
+          <span class="notif-cat-text">Account updates</span>
+        </div>
+        <div class="notif-card-title">Your email was updated</div>
+        <div class="notif-card-body">
+          Your email was updated to "a***7@gmail.com" on 09/24 10:32 EDT in North Carolina on device iPhone 15 Pro. If this wasn't you... <span style="color:var(--text-muted);">∨</span> <span class="notif-card-date">Sep 24, 2025</span>
+        </div>
+        <div class="notif-card-more">View more</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SCREEN 0: 关播页 (End Stream Page)
+  ═══════════════════════════════ -->
+  <div class="app-screen active" id="screen-end-stream" style="background:#f5f5f5;">
+    <div class="end-stream-scroll" id="end-stream-scroll">
+      <div class="end-stream-header-row" id="end-stream-header">
+        <div class="end-stream-close">×</div>
+        <div class="end-stream-live-center">◆ LIVE Center</div>
+      </div>
+      <div style="padding: 4px 20px 0;">
+        <div class="end-stream-duration">Duration: 5s</div>
+        <div class="end-stream-congrats">Congratulations!</div>
+        <div class="end-stream-subtitle">You're doing great. Keep up the good work!</div>
+      </div>
+
+      <!-- Stats -->
+      <div class="es-stats">
+        <div class="es-stat"><div class="es-stat-num">0</div><div class="es-stat-label">Viewers</div></div>
+        <div class="es-stat"><div class="es-stat-num">0</div><div class="es-stat-label">Gifters</div></div>
+        <div class="es-stat"><div class="es-stat-num">0</div><div class="es-stat-label">New followers</div></div>
+        <div style="display:flex;align-items:center;color:var(--text-muted);font-size:18px;">›</div>
+      </div>
+
+      <!-- Scaled LIVE Rewards -->
+      <div class="es-rewards">
+        <div class="es-rewards-title">Scaled LIVE Rewards</div>
+        <div class="es-rewards-amounts">
+          <div class="es-rewards-col">
+            <div class="es-rewards-amount">$0.00</div>
+            <div class="es-rewards-label">Est. this LIVE</div>
+          </div>
+          <div class="es-rewards-col">
+            <div class="es-rewards-amount">$0.00</div>
+            <div class="es-rewards-label">Est. this week</div>
+          </div>
+          <div style="color:var(--text-muted);font-size:18px;margin-left:auto;">›</div>
+        </div>
+        <div class="es-rewards-diamonds">Diamonds from this LIVE: 💎 0</div>
+      </div>
+
+      <!-- ⚠️ Restrictions -->
+      <div class="es-restrictions" onclick="openRestrictionInbox()">
+        <div class="es-card-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:16px;">⚠️</span>
+            <span class="es-card-title">Restrictions</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;color:var(--text-muted);font-size:14px;">
+            <span id="restriction-count">3</span>
+            <span class="es-card-arrow">›</span>
+          </div>
+        </div>
+        <div class="es-card-sub">Learn more about your restriction details.</div>
+      </div>
+
+      <!-- Join Service+ -->
+      <div class="es-card">
+        <div class="es-card-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:16px;">📋</span>
+            <span class="es-card-title">Join Service+</span>
+          </div>
+          <span class="es-card-arrow">›</span>
+        </div>
+        <div class="es-card-sub">Build a bio to connect with viewers and monetize your skills!</div>
+      </div>
+
+      <!-- LIVE Journey -->
+      <div class="es-card">
+        <div class="es-card-header">
+          <span class="es-card-title">LIVE Journey</span>
+          <span class="es-card-arrow">›</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:2px;margin-top:4px;">
+          <span style="font-size:15px;font-weight:700;color:var(--text);">Stage 1</span>
+          <div class="es-journey-stage" style="margin-left:6px;">
+            <div class="es-journey-dot active"></div>
+            <div class="es-journey-dot inactive"></div>
+            <div class="es-journey-dot inactive"></div>
+            <div class="es-journey-dot inactive"></div>
+          </div>
+        </div>
+        <div class="es-journey-text">Get 3 points to reach the next stage.</div>
+      </div>
+
+      <!-- Fan Club -->
+      <div class="es-card">
+        <div class="es-card-header">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:16px;">💬</span>
+            <span class="es-card-title">Fan Club</span>
+          </div>
+          <span class="es-card-arrow">›</span>
+        </div>
+      </div>
+
+      <!-- LIVE recordings -->
+      <div class="es-card">
+        <div class="es-card-header">
+          <span class="es-card-title">LIVE recordings</span>
+          <span class="es-card-arrow">›</span>
+        </div>
+        <div class="es-card-sub">No highlights captured. Create and post your own clip!</div>
+        <div class="es-replay">
+          <div class="es-replay-thumb">🎬</div>
+          <div class="es-replay-info">
+            <div class="es-replay-title">Replay</div>
+            <div class="es-replay-meta">0:05</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campaigns -->
+      <div class="es-card">
+        <div class="es-card-header">
+          <span class="es-card-title">Campaigns</span>
+          <span class="es-card-arrow">›</span>
+        </div>
+        <div class="es-campaign-item">
+          <div class="es-campaign-icon">⭐</div>
+          <div class="es-campaign-text">
+            <div class="es-campaign-text-title">1 new</div>
+            <div class="es-campaign-text-sub">Discover more campaigns. Get Diamonds and rewards!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- How was your LIVE experience? -->
+      <div class="es-experience">
+        <div class="es-experience-title">How was your LIVE experience?</div>
+        <div class="es-experience-faces">
+          <div class="es-face" onclick="showToast('Thanks for your feedback!')">
+            <div class="es-face-icon">😣</div>
+            <div class="es-face-label">Poor</div>
+          </div>
+          <div class="es-face" onclick="showToast('Thanks for your feedback!')">
+            <div class="es-face-icon">🙂</div>
+            <div class="es-face-label">Average</div>
+          </div>
+          <div class="es-face" onclick="showToast('Thanks for your feedback!')">
+            <div class="es-face-icon">😄</div>
+            <div class="es-face-label">Good</div>
+          </div>
+        </div>
+        <div class="es-experience-note">This may help us personalize your LIVE experience. Learn more about our <strong>Privacy Policy</strong>. ⓘ</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SCREEN 1: Restrictions Inbox
+  ═══════════════════════════════ -->
+  <div class="app-screen" id="screen-inbox" style="background:#f5f5f5;">
+    <div class="topbar">
+      <div class="back-btn" onclick="goBackFromInbox()">‹</div>
+      <div class="topbar-center">Restrictions</div>
+      <div style="width:36px;"></div>
+    </div>
+    <div class="inbox-tabs">
+      <div class="inbox-tab active" id="tab-active" onclick="switchTab('active')">Active (<span id="active-count">3</span>)</div>
+      <div class="inbox-tab" id="tab-history" onclick="switchTab('history')">History (<span id="history-count">3</span>)</div>
+    </div>
+    <div class="inbox-list" id="inbox-list"></div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SCREEN 2: Restriction Details
+  ═══════════════════════════════ -->
+  <div class="app-screen" id="screen-detail" style="background:var(--white);">
+    <div class="topbar">
+      <div class="back-btn" onclick="goToInbox()">‹</div>
+      <div class="topbar-center"></div>
+      <div class="topbar-right" id="detail-appeal-link" onclick="openAppealModal()" style="display:none;">Appeal</div>
+    </div>
+    <div class="detail-scroll" id="detail-scroll">
+      <div class="detail-hero">
+        <div class="detail-hero-icon" id="detail-hero-icon">
+          <span class="detail-hero-icon-main" id="detail-icon-main"></span>
+          <span class="detail-hero-icon-badge" id="detail-icon-badge"></span>
+        </div>
+        <div class="detail-hero-title" id="detail-hero-title"></div>
+      </div>
+
+      <!-- Restriction status -->
+      <div class="detail-section">
+        <div class="detail-section-title" id="detail-status-title">Restriction ended</div>
+        <div class="detail-section-date" id="detail-status-date"></div>
+      </div>
+
+      <!-- Restriction details — plain text OR AI-insight panel (demo) -->
+      <div class="detail-section" id="detail-desc-section">
+        <div class="detail-section-title" style="display:flex;align-items:center;gap:8px;">
+          <span>Restriction details</span>
+          <span class="ai-desc-badge" id="detail-desc-badge" style="display:none;">✨ AI</span>
+        </div>
+        <div class="detail-section-text" id="detail-desc"></div>
+        <div class="ai-desc-panel" id="detail-ai-desc-panel" style="display:none;">
+          <div class="ai-desc-body" id="detail-ai-desc-body"></div>
+        </div>
+      </div>
+
+      <!-- Video clip passthrough -->
+      <div class="detail-video-section" id="detail-video-section">
+        <div class="detail-section-title">Violation clip</div>
+        <div class="video-placeholder" id="detail-video">
+          <div class="video-bg" id="detail-video-bg">
+            <div class="video-person" id="detail-video-icon"></div>
+          </div>
+          <div class="video-overlay">
+            <div class="play-btn"></div>
+          </div>
+          <div class="video-timestamp" id="detail-video-ts"></div>
+          <div class="video-muted-badge" id="detail-muted-badge" style="display:none"></div>
+        </div>
+        <div class="video-clip-hint">
+          <span class="clip-dot"></span>
+          <span>Tap to review violation moment</span>
+        </div>
+      </div>
+
+      <!-- LIVE details -->
+      <div class="detail-section">
+        <div class="detail-section-title">LIVE details</div>
+        <div class="detail-live-card">
+          <div class="detail-live-info">
+            <div class="detail-live-name" id="detail-live-name"></div>
+            <div class="detail-live-meta" id="detail-live-meta"></div>
+          </div>
+          <div class="detail-live-thumb">
+            <div class="detail-live-thumb-inner" id="detail-live-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Proactive AI Stream -->
+      <div class="ai-stream-section" id="detail-ai-stream" style="display:none;">
+        <div class="ai-stream-header">
+          <div class="agent-avatar" style="width:24px;height:24px;font-size:11px;">🤖</div>
+          <span style="font-size:13px;font-weight:600;color:var(--text);">AI Insight</span>
+        </div>
+        <div class="ai-stream-body" id="detail-ai-stream-body"></div>
+        <!-- Inline options after stream (for proactive AI pages) -->
+        <div class="ai-stream-options" id="detail-ai-options" style="display:none;margin-top:12px;"></div>
+      </div>
+
+      <!-- Feedback (always at bottom) -->
+      <div class="detail-feedback" id="detail-feedback-section">
+        <div class="feedback-label">Feedback</div>
+        <div class="feedback-desc" id="detail-feedback-q"></div>
+        <div class="feedback-btns">
+          <button class="feedback-btn" onclick="selectFeedback(this,'yes')">👍 Yes</button>
+          <button class="feedback-btn" onclick="selectFeedback(this,'no')">👎 No</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-bottom" id="detail-bottom-bar">
+      <div class="detail-bottom-link" id="detail-bottom-link">Have questions? <strong>Ask for Help</strong> to learn more</div>
+      <div class="detail-bottom-btns" id="detail-bottom-btns">
+        <button class="btn-primary" id="detail-action-btn" onclick="openChat()">Ask for Help</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SCREEN: Appeal Result Detail
+  ═══════════════════════════════ -->
+  <div class="app-screen" id="screen-appeal-detail" style="background:var(--white);">
+    <div class="topbar">
+      <div class="back-btn" onclick="goToInbox()">‹</div>
+      <div class="topbar-center"></div>
+      <div class="topbar-right" id="appeal-help-link" onclick="openAppealModal()">Appeal</div>
+    </div>
+    <div class="detail-scroll" id="appeal-detail-scroll">
+      <div class="detail-hero">
+        <div id="appeal-hero-icon" style="margin-bottom:16px;"></div>
+        <div class="detail-hero-title" id="appeal-hero-title"></div>
+        <div style="font-size:14px;color:var(--text-secondary);line-height:1.6;text-align:center;margin-top:8px;padding:0 10px;" id="appeal-hero-desc"></div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-title">Reason for appeal</div>
+        <div class="detail-section-text" id="appeal-reason-text"></div>
+      </div>
+
+      <div class="detail-section">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;" id="appeal-restriction-title"></div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;" id="appeal-restriction-status"></div>
+        <div class="detail-section-date" id="appeal-restriction-date"></div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-title">Restriction details</div>
+        <div class="detail-section-text" id="appeal-restriction-desc"></div>
+      </div>
+
+      <!-- Video clip passthrough -->
+      <div class="detail-video-section" id="appeal-video-section">
+        <div class="detail-section-title" style="padding:0 0 8px;">Violation clip</div>
+        <div class="video-placeholder" id="appeal-video">
+          <div class="video-bg" id="appeal-video-bg">
+            <div class="video-person" id="appeal-video-icon"></div>
+          </div>
+          <div class="video-overlay"><div class="play-btn"></div></div>
+          <div class="video-timestamp" id="appeal-video-ts"></div>
+        </div>
+        <div class="video-clip-hint">
+          <span class="clip-dot"></span>
+          <span>Tap to review violation moment</span>
+        </div>
+      </div>
+
+      <!-- Proactive AI Stream -->
+      <div class="ai-stream-section" id="appeal-ai-stream" style="display:none;">
+        <div class="ai-stream-header">
+          <div class="agent-avatar" style="width:24px;height:24px;font-size:11px;">🤖</div>
+          <span style="font-size:13px;font-weight:600;color:var(--text);">AI Insight</span>
+        </div>
+        <div class="ai-stream-body" id="appeal-ai-stream-body"></div>
+        <div class="ai-stream-options" id="appeal-ai-options" style="display:none;margin-top:12px;"></div>
+      </div>
+
+      <!-- Feedback (always at bottom) -->
+      <div class="detail-section" id="appeal-feedback-section">
+        <div class="feedback-label">Feedback</div>
+        <div class="feedback-desc" id="appeal-feedback-q"></div>
+        <div class="feedback-btns">
+          <button class="feedback-btn" onclick="selectFeedback(this,'yes')">Yes</button>
+          <button class="feedback-btn" onclick="selectFeedback(this,'no')">No</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-bottom" id="appeal-bottom-bar">
+      <div class="detail-bottom-link">Have questions? <strong>Ask for Help</strong> to learn more</div>
+      <div class="detail-bottom-btns" id="appeal-bottom-btns">
+        <button class="btn-primary" onclick="openChatFromAppeal()">Ask for Help</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SCREEN 3: AI Chat
+  ═══════════════════════════════ -->
+  <div class="app-screen" id="screen-chat" style="background:var(--white);">
+    <div class="chat-topbar">
+      <div class="back-btn" onclick="closeChat()">‹</div>
+      <span class="chat-topbar-title">Ask for Help</span>
+      <span class="chat-topbar-badge" id="chat-punish-badge"></span>
+    </div>
+    <div class="chat-context">
+      <div class="chat-context-header" onclick="toggleChatContext()">
+        <div>
+          <div class="chat-context-label">Violation reason</div>
+          <div class="chat-context-reason" id="chat-reason-type"></div>
+        </div>
+        <span class="chat-context-chevron" id="chat-ctx-chevron">∨</span>
+      </div>
+      <div class="chat-context-body" id="chat-context-body">
+        <div class="chat-video-wrap" id="chat-video-wrap" onclick="playChatClip()">
+          <div class="chat-video-bg" id="chat-video-bg">
+            <span class="chat-video-icon" id="chat-video-icon"></span>
+          </div>
+          <div class="chat-video-ts" id="chat-video-ts"></div>
+          <div class="video-overlay"><div class="play-btn"></div></div>
+        </div>
+        <div class="chat-clip-hint">
+          <span>▶</span><span>Tap to play the flagged clip</span>
+        </div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="quick-replies" id="quick-replies">
+      <div class="quick-replies-label">Choose a reply</div>
+    </div>
+    <div class="chat-input-bar">
+      <div class="chat-input-wrap">
+        <input type="text" class="chat-input" id="chat-input" placeholder="Type your question..." onkeydown="handleChatInputKey(event)" oninput="updateSendButton()" />
+        <button class="chat-input-send" id="chat-input-send" disabled onclick="sendChatInput()">↑</button>
+      </div>
+    </div>
+    <div class="appeal-banner" id="appeal-banner">
+      <div class="appeal-banner-title">🔔 You may have grounds for an appeal</div>
+      <div class="appeal-banner-desc">It sounds like you believe this enforcement action may have been an error. You can file a formal appeal to have a human specialist review your case.</div>
+      <button class="appeal-banner-btn" onclick="openAppealModal()">File an Appeal</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       MODAL: Appeal Reason Selection
+  ═══════════════════════════════ -->
+  <div class="appeal-modal-overlay" id="appeal-modal-overlay" onclick="closeAppealModal(event)">
+    <div class="appeal-modal" onclick="event.stopPropagation()">
+      <button class="appeal-modal-close" onclick="closeAppealModal()">✕</button>
+      <div class="appeal-modal-title">Select reason for appeal</div>
+      <div id="appeal-reasons-list">
+        <div class="appeal-reason-item" onclick="selectAppealReason(this, 0)">
+          <div class="appeal-reason-text">The notice is unclear. I'm still not sure why I got this restriction.</div>
+          <div class="appeal-reason-radio"></div>
+        </div>
+        <div class="appeal-reason-item" onclick="selectAppealReason(this, 1)">
+          <div class="appeal-reason-text">My LIVE does not contain the content mentioned in the notice</div>
+          <div class="appeal-reason-radio"></div>
+        </div>
+        <div class="appeal-reason-item" onclick="selectAppealReason(this, 2)">
+          <div class="appeal-reason-text">TikTok should allow content like mine</div>
+          <div class="appeal-reason-radio"></div>
+        </div>
+        <div class="appeal-reason-item" onclick="selectAppealReason(this, 3)">
+          <div class="appeal-reason-text">I understand the decision, but the restriction is too strict</div>
+          <div class="appeal-reason-radio"></div>
+        </div>
+        <div class="appeal-reason-item" onclick="selectAppealReason(this, 4)">
+          <div class="appeal-reason-text">Something else</div>
+          <div class="appeal-reason-radio"></div>
+        </div>
+      </div>
+      <button class="appeal-submit-btn" id="appeal-submit-btn" disabled onclick="submitAppeal()">Submit</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       SCREEN: Video Player
+  ═══════════════════════════════ -->
+  <div class="app-screen player-screen" id="screen-player">
+    <div class="player-topbar">
+      <div class="player-back" onclick="closePlayer()">‹</div>
+      <div class="player-title">Violation Clip</div>
+      <div style="width:36px;"></div>
+    </div>
+    <div class="player-video-wrap">
+      <video id="player-video" playsinline></video>
+    </div>
+    <div class="player-timestamp" id="player-timestamp">00:00 / 00:00</div>
+    <div class="player-violation-bar" id="player-violation-bar"></div>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+// ═══════════════════════════════════
+//  SCENARIO DATA
+// ═══════════════════════════════════
+
+// SVG icon templates for detail hero
+const SVG_GIFT = `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="6" y="20" width="36" height="22" rx="3" stroke="#8e8e93" stroke-width="2.5" fill="none"/>
+  <rect x="4" y="14" width="40" height="8" rx="3" stroke="#8e8e93" stroke-width="2.5" fill="none"/>
+  <line x1="24" y1="14" x2="24" y2="42" stroke="#8e8e93" stroke-width="2.5"/>
+  <path d="M24 14c0 0-2-6-8-6s-6 6 0 6" stroke="#8e8e93" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M24 14c0 0 2-6 8-6s6 6 0 6" stroke="#8e8e93" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+</svg>`;
+const SVG_CAMERA = `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="12" width="32" height="24" rx="3" stroke="#8e8e93" stroke-width="2.5" fill="none"/>
+  <polygon points="36,18 44,13 44,35 36,30" stroke="#8e8e93" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+  <circle cx="20" cy="24" r="5" stroke="#8e8e93" stroke-width="2" fill="none"/>
+</svg>`;
+const SVG_STOP = `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="12" width="32" height="24" rx="3" stroke="#8e8e93" stroke-width="2.5" fill="none"/>
+  <polygon points="36,18 44,13 44,35 36,30" stroke="#8e8e93" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+  <line x1="12" y1="18" x2="28" y2="30" stroke="#8e8e93" stroke-width="2" stroke-linecap="round"/>
+  <line x1="28" y1="18" x2="12" y2="30" stroke="#8e8e93" stroke-width="2" stroke-linecap="round"/>
+</svg>`;
+const BADGE_PROHIBIT = `<svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="#e8453c"/><line x1="5" y1="9" x2="13" y2="9" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+const BADGE_WARN = `<svg width="18" height="18" viewBox="0 0 20 20"><polygon points="10,2 19,17 1,17" fill="#e8453c" stroke="none"/><text x="10" y="15" text-anchor="middle" fill="white" font-size="11" font-weight="700">!</text></svg>`;
+
+// ═══════════════════════════════════
+//  VIOLATION POLICY — single source of truth per violation type
+//  Used by: detail pages, appeal detail, proactive AI, chat responses
+// ═══════════════════════════════════
+
+const POLICY_BODY_EXPOSURE = {
+  id: 'body_exposure',
+  displayName: 'Sexually Suggestive Content',
+  shortName: 'Sexually Suggestive Content',
+  policyDescShort: 'LIVE content must not feature revealing clothing or sexually suggestive behavior.',
+  policyDescLong: 'This behaviour is not in line with our policies. The LIVE contained revealing clothing and suggestive behavior that violates our Community Guidelines on Sexually Suggestive Content. Streams featuring revealing/provocative clothing, suggestive poses, gestures, or camera angles intended to attract attention through sexual appeal are restricted regardless of intent.',
+  detectionPattern: 'revealing clothing + body-focused framing',
+  examples: {
+    allowed: [
+      'Performance wear appropriate for dance or fitness',
+      'Fashion try-ons with full coverage',
+      'Activity-focused framing, not body-focused',
+    ],
+    notAllowed: [
+      'Low-cut tops paired with close body-focused angles',
+      'Sheer or see-through clothing as main focus',
+      'Repeated close-ups of specific body areas',
+    ],
+  },
+  proactiveInsight: 'Your LIVE was flagged because the system detected revealing clothing and body-focused framing between 12:34:56–12:35:00 of your stream. This combination is a strong signal under our Sexually Suggestive Content policy, regardless of intent.\n\nTo avoid this next time, keep camera framing on your activity rather than your body, and choose outfits with more coverage.',
+  // Chat response templates, keyed by intent
+  understand: {
+    default: 'Your LIVE was flagged because the system detected <strong>revealing clothing combined with body-focused framing</strong> in the clip. That combination matches the pattern for sexually suggestive content under our Sexually Suggestive Content policy.',
+    withSelection: 'In the region you marked (around <strong>{TS}</strong>), the system flagged <strong>revealing clothing and body-focused framing</strong> — the key signals our Sexually Suggestive Content policy looks for.',
+    withExample: 'A concrete example: a dance session in full-coverage workout wear is fine. The same dance in a low-cut top with the camera framed on the torso would be flagged. It\'s the outfit + framing combination that matters, not either one alone.',
+    withRule: 'The specific rule is <strong>Sexually Suggestive Content</strong>: LIVE content must not feature revealing or provocative clothing, or suggestive poses/angles intended to attract attention through sexual appeal.',
+    whyThisMoment: 'At that specific moment, the system detected both visual signals (clothing + angle) occurring together with sustained duration. Brief incidental moments usually don\'t trigger this; the combination persisting over several seconds is what tips it over.',
+  },
+  dispute: {
+    triageQuestion: 'That\'s frustrating and I want to understand. Can you tell me what was happening in that moment — was this part of a routine, a fashion segment, or something else?',
+    openContext: 'Context matters here. If this was a legitimate dance, fashion, or fitness segment, a human reviewer can evaluate the broader clip. What specifically was happening?',
+    openOutOfContext: 'I hear you. The system sometimes flags moments that read very differently in context. A specialist can review the full clip with surrounding context.',
+    openNotMine: 'If the content in the flagged clip isn\'t yours, this is definitely worth appealing. The reviewer will verify identity and lift the restriction if confirmed.',
+    allowedContent: 'I understand your perspective. The guidelines set a bar that applies to all creators — a specialist can assess whether the specific clip fell within that bar.',
+  },
+  improve: {
+    tips: [
+      'Avoid low-cut, sheer, or tight revealing outfits as your main LIVE wardrobe',
+      'Keep camera framing on your activity or face — not on your body',
+      'For fitness/dance content, wear sport-appropriate coverage',
+      'Avoid suggestive poses, hip/chest focus, and slow body pans',
+    ],
+    resources: 'Community Guidelines → Sexually Suggestive Content\nCreator Academy → LIVE content best practices',
+  },
+  nextSteps: {
+    timeline: 'This restriction is active from <strong>4/13/2026 10:00 AM</strong> to <strong>4/20/2026 10:00 AM</strong>. It lifts automatically — you don\'t need to do anything.',
+    userRights: 'You can file an appeal at any time before the restriction ends. Non-LIVE content (videos, posts) is unaffected.',
+    canGoLive: 'Gifting and recommendation visibility resume automatically when the restriction ends.',
+  },
+  modeMessages: {
+    pending: 'Your appeal is under review. A specialist is examining the clip. While you wait, here\'s what you can learn about this policy:',
+    approved: 'Your appeal was approved — gifting and visibility are restored. Keep creating great content!',
+    rejected: 'After review, the original decision stands. For future LIVEs, avoid the patterns we discussed to prevent similar restrictions.',
+  },
+  closures: {
+    short: 'Glad I could help. You can come back anytime.',
+    withAppeal: 'Your appeal is being filed. You\'ll hear back within 2–3 days.',
+    endOfLoops: 'Feel free to reach out again if you have more questions. Have a great day!',
+    nonAppealable: null,
+  },
+};
+
+const POLICY_BEGGING = {
+  id: 'inorganic_gift_solicitation',
+  displayName: 'Inorganic Gift Solicitation',
+  shortName: 'Inorganic Gift Solicitation',
+  policyDescShort: 'LIVE content must not solicit money or gifts through sympathy-based tactics or props.',
+  policyDescLong: 'This behaviour is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation — the LIVE contained content soliciting money or gifts from viewers, including visible currency or monetary imagery on-screen. This violates our Community Guidelines on Integrity and Authenticity.',
+  detectionPattern: 'signs requesting money + solicitation gestures',
+  examples: {
+    allowed: [
+      'Announcing charity partnerships with verified organizations',
+      'Gratitude messages after receiving organic gifts',
+      'Performance or tutorial content without donation pressure',
+    ],
+    notAllowed: [
+      'Holding signs requesting money from viewers',
+      'Simulated solicitation scenes or sympathy-based framing',
+      'Repeated verbal appeals for gifts or donations',
+    ],
+  },
+  proactiveInsight: 'Your LIVE was flagged because the system detected inorganic gift solicitation between 12:34:56–12:35:00 — specifically, a person visible currency / monetary imagery combined with solicitation gestures toward the camera.\n\nLIVE streams should not use sympathy-based tactics to solicit gifts or donations from viewers. To avoid this, focus on authentic content showcasing your talents or topics.',
+  understand: {
+    default: 'Your LIVE was flagged because the system detected <strong>signs requesting money and solicitation gestures</strong> directed at viewers. That pattern violates our Integrity and Authenticity guidelines.',
+    withSelection: 'In the region you marked (around <strong>{TS}</strong>), the system detected <strong>visible currency / monetary imagery and solicitation gestures</strong> — the key signals for the Inorganic Gift Solicitation policy.',
+    withExample: 'A concrete example: thanking viewers who organically sent gifts is fine. Holding up a sign that says "send me roses" or making pleading gestures at the camera is not — even if done as a joke or role-play.',
+    withRule: 'The specific rule is <strong>Inorganic Gift Solicitation</strong>: LIVE content must not solicit money or gifts from viewers through props (e.g. signs requesting donations) or sympathy-based tactics.',
+    whyThisMoment: 'At that moment, the system detected both visible currency / monetary imagery and the repeated soliciting gestures occurring together. The combination is what triggers the flag — either alone is less likely to.',
+  },
+  dispute: {
+    triageQuestion: 'I understand this is frustrating. Can you tell me what was happening — was this performance art, satire, or something else?',
+    openContext: 'Context matters. If this was performance art, satire, or clearly staged content, a human reviewer can evaluate that. Can you tell me more?',
+    openOutOfContext: 'The system can catch moments that read differently in context. A specialist can review the full clip.',
+    openNotMine: 'If the content isn\'t yours, this is worth appealing. Reviewer will verify.',
+    allowedContent: 'I hear you. The guidelines apply across styles of content — a specialist can weigh whether this specific clip fit within artistic/satirical latitude.',
+  },
+  improve: {
+    tips: [
+      'Do not display signs requesting money, gifts, or donations',
+      'Avoid simulating or performing solicitation as content',
+      'Don\'t use sympathy tactics ("I need this to survive") to encourage gifting',
+      'Focus on authentic, engaging content that showcases your talent',
+    ],
+    resources: 'Community Guidelines → Integrity and Authenticity\nCreator Academy → LIVE monetization best practices',
+  },
+  nextSteps: {
+    timeline: 'This restriction is active from <strong>4/13/2026 10:00 AM</strong> to <strong>4/20/2026 10:00 AM</strong>. It lifts automatically.',
+    userRights: 'Gifting is unaffected — viewers can still gift voluntarily. Only recommendation reach is limited. You can file an appeal before the restriction ends.',
+    canGoLive: 'Reach resumes automatically when the restriction ends.',
+  },
+  modeMessages: {
+    pending: 'Your appeal is currently being reviewed. While you wait, here\'s what to know about this policy:',
+    approved: 'Your appeal was approved — reach has been restored.',
+    rejected: 'After review, the original decision stands. Review the tips to avoid similar flags in future LIVEs.',
+  },
+  closures: {
+    short: 'Glad I could help. See you next LIVE.',
+    withAppeal: 'Your appeal is being filed. You\'ll hear back within 2–3 days.',
+    endOfLoops: 'Feel free to reach out again any time. Have a great day!',
+    nonAppealable: null,
+  },
+};
+
+const POLICY_FORMAT_INTERRUPT = {
+  id: 'format_interrupt',
+  displayName: 'Format Verification Violation',
+  shortName: 'Format Verification',
+  policyDescShort: 'LIVE did not meet format/content verification requirements.',
+  policyDescLong: 'Your LIVE session did not meet format verification requirements. Stream interruptions of this type are automatically applied. Please review Community Guidelines before your next LIVE.',
+  detectionPattern: 'format/quality verification failure',
+  examples: {
+    allowed: [
+      'Well-lit, active LIVE with visible host',
+      'Audio matching visual content',
+      'Original content that meets format standards',
+    ],
+    notAllowed: [
+      'Black screens or static imagery as main content',
+      'Audio-only or low-quality visuals',
+      'Content that fails format checks',
+    ],
+  },
+  proactiveInsight: null,
+  understand: {
+    default: 'Your session was ended because it didn\'t meet format verification requirements — likely the visual content didn\'t match our LIVE format standards.',
+    withSelection: 'In the region you marked (around <strong>{TS}</strong>), the system detected the format mismatch that triggered the interruption.',
+    withExample: 'Example: A LIVE showing a static image for long stretches, or audio playing over a blank camera feed, would fail this check.',
+    withRule: 'The rule is <strong>Format Verification</strong>: LIVE content must meet our active-visual and format standards throughout the stream.',
+    whyThisMoment: 'The format check runs continuously; the interruption fires as soon as the criteria fail for a sustained period.',
+  },
+  dispute: {
+    triageQuestion: 'I understand. Stream interruptions for format issues are automated and not appealable — but I can help you understand what triggered it. Was your camera active and showing original content?',
+    openContext: null,
+    openOutOfContext: null,
+    openNotMine: null,
+    allowedContent: null,
+  },
+  improve: {
+    tips: [
+      'Keep your camera active and showing original content throughout',
+      'Ensure good lighting and visible activity',
+      'Avoid static images, audio-only content, or extended black screens',
+      'Test your setup before going live',
+    ],
+    resources: 'Community Guidelines → LIVE format requirements\nCreator Academy → LIVE setup best practices',
+  },
+  nextSteps: {
+    timeline: 'This is a one-time interruption. You can start a new LIVE right away.',
+    userRights: 'No appeal is needed for format interruptions — simply start a new LIVE that meets the format criteria.',
+    canGoLive: 'You can go LIVE again anytime. Review the tips above first.',
+    interruptRestart: 'Start a new LIVE that meets the format requirements — you\'re good to go right away.',
+  },
+  modeMessages: {
+    pending: null,
+    approved: null,
+    rejected: null,
+  },
+  closures: {
+    short: 'Ready when you are. Go LIVE again whenever you\'re set.',
+    withAppeal: null,
+    endOfLoops: 'Come back anytime. Good luck with your next LIVE!',
+    nonAppealable: 'Stream interruptions for format issues are automated — no formal appeal process. The fastest path is to review the guidelines and start fresh.',
+  },
+};
+
+// Per-item detail/chat data for each inbox item type
+
+// ── Gift Ban + NR: Sexually Suggestive Content ──
+const DETAIL_GIFT_NR = {
+  id: 'gift_nr', appealable: true, policy: POLICY_BODY_EXPOSURE,
+  iconSvg: SVG_GIFT, badgeSvg: BADGE_WARN,
+  title: 'Gifting suspended and LIVE visibility restricted',
+  statusTitle: 'Restriction active',
+  statusDate: '4/13/2026 10:00 AM - 4/20/2026 10:00 AM',
+  desc: 'This behaviour is not in line with our policies. Gifting is suspended and your LIVE is restricted in recommendations and search results. Reason: sexually suggestive content — the LIVE contained revealing clothing and suggestive behavior that violates our Community Guidelines on Sexually Suggestive Content. Learn more in TikTok LIVE section under our Community Guidelines.',
+  useVideo: true, videoSrc: 'clip-giftnr.mp4', videoThumb: 'clip-giftnr-thumb.jpg', videoTs: '12:34:56–12:35:00', showMuted: false,
+  liveName: 'Evening Stream 💃', liveMeta: 'Started on 4/13/2026 at 10:00 AM',
+  liveThumbClass: 'thumb-2', liveThumbIcon: '💃',
+  feedbackQ: 'Do you think this restriction is reasonable?',
+  reasonType: 'Sexually Suggestive Content',
+};
+const CHAT_GIFT_NR = {
+  badgeText: '礼物封禁+NR', badgeBg: 'rgba(120,60,200,.12)', badgeColor: '#783cc8',
+  opening: `Your session <strong>"Evening Stream 💃"</strong> received <strong>two restrictions</strong> at <strong>01:12</strong>:<br><br>1. <strong>Gifting suspended</strong> — sexually suggestive content detected<br>2. <strong>Reach limited (NR)</strong> — removed from recommendations<br><br>The system flagged revealing clothing and suggestive behavior in your LIVE. How can I help?`,
+  selectionAck: `Got it — the system flagged the visual content in that area as sexually suggestive. What was your intent there?`,
+  round2_A: `The rules involved:\n\n• <strong>Revealing clothing</strong>: LIVE content must not feature revealing or provocative clothing intended to attract attention through sexual appeal\n• <strong>Suggestive behavior</strong>: Suggestive poses, gestures, or movements that are overtly sexual are not allowed\n\nBoth fall under our <strong>Sexually Suggestive Content</strong> policy. Both restrictions are active until 4/20/2026.`,
+  round2_B: `The system uses visual analysis to detect suggestive content. If your outfit or behavior was misinterpreted, that context matters for appeal. Can you describe what you were wearing and doing?`,
+  round2_C: `• Wear clothing that covers appropriately — avoid low-cut, sheer, or revealing outfits\n• Avoid suggestive poses or body-focused camera angles\n• Keep content focused on your talent or topic, not physical appearance`,
+  round3_B_B: `Body exposure rules can sometimes flag legitimate fashion or dance content. A human reviewer can assess the full context of the clip.`,
+  round3_appeal: `You believe these restrictions were applied in error. A specialist will review the flagged video clip for context.`,
+  closingMsg: `Restrictions are active until 4/20/2026. Please review our guidelines on appropriate content before your next LIVE.`,
+};
+
+// ── NR only: Inorganic Gift Solicitation ──
+// ── NR v1 (original pattern): static Restriction details + separate proactive AI Insight panel ──
+const DETAIL_NR_ORIGINAL = {
+  id: 'nr', appealable: true, policy: POLICY_BEGGING,
+  iconSvg: SVG_CAMERA, badgeSvg: BADGE_WARN,
+  title: 'LIVE visibility restricted',
+  statusTitle: 'Restriction active',
+  statusDate: '4/13/2026 10:00 AM - 4/20/2026 10:00 AM',
+  desc: 'This behaviour is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation — the LIVE contained content soliciting money or gifts from viewers, including visible currency or monetary imagery on-screen. This violates our Community Guidelines on Integrity and Authenticity. Learn more in TikTok LIVE section under our Community Guidelines.',
+  useVideo: true, videoSrc: 'clip-nr.mp4', videoThumb: 'clip-nr-thumb.jpg', videoTs: '12:34:56–12:35:00', showMuted: false,
+  liveName: 'Street Stream (v1)', liveMeta: 'Started on 4/13/2026 at 10:00 AM',
+  liveThumbClass: 'thumb-3', liveThumbIcon: '📱',
+  feedbackQ: 'Do you think this restriction is reasonable?',
+  reasonType: 'Inorganic Gift Solicitation',
+  proactiveAI: 'Your LIVE was flagged because the system detected inorganic gift solicitation between 12:34:56–12:35:00. The content showed visible currency / monetary imagery on-screen combined with solicitation gestures toward the camera.\n\nThis type of content violates our guidelines on Integrity and Authenticity. LIVE streams should not use sympathy-based tactics to solicit gifts or donations from viewers.',
+  useAIDesc: false,
+};
+
+// ── NR v2 (new pattern): AI-powered Restriction details with embedded agent entry points ──
+const DETAIL_NR = {
+  id: 'nr', appealable: true, policy: POLICY_BEGGING,
+  iconSvg: SVG_CAMERA, badgeSvg: BADGE_WARN,
+  title: 'LIVE visibility restricted',
+  statusTitle: 'Restriction active',
+  statusDate: '4/13/2026 10:00 AM - 4/20/2026 10:00 AM',
+  desc: 'This behaviour is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation — the LIVE contained content soliciting money or gifts from viewers, including visible currency or monetary imagery on-screen. This violates our Community Guidelines on Integrity and Authenticity. Learn more in TikTok LIVE section under our Community Guidelines.',
+  // v2 uses its own clip to avoid duplicating v1's video
+  useVideo: true, videoSrc: 'clip-nr-v2.mp4', videoThumb: 'clip-nr-v2-thumb.jpg', videoTs: '12:34:56–12:35:00', showMuted: false,
+  liveName: 'Street Stream (v2)', liveMeta: 'Started on 4/13/2026 at 10:00 AM',
+  liveThumbClass: 'thumb-3', liveThumbIcon: '📱',
+  feedbackQ: 'Do you think this restriction is reasonable?',
+  reasonType: 'Inorganic Gift Solicitation',
+  // v2: separate bottom AI Insight panel is disabled — agent entries live inside the Restriction details block
+  proactiveAI: null,
+  // DEMO: AI-generated "Restriction details" — streamed, structured, evidence-citing
+  useAIDesc: true,
+  aiDescWithActions: true, // render 3 agent-entry buttons after the insight rows
+  aiDescHtml: `
+    <div class="ai-insight-row">
+      <span class="ai-insight-icon">🔍</span>
+      <div><strong>What was detected</strong><br>At <span class="ai-insight-cite">12:34:56</span> visible currency / monetary imagery was shown on-screen, paired with repeated pleading hand gestures directed at viewers.</div>
+    </div>
+    <div class="ai-insight-row">
+      <span class="ai-insight-icon">📋</span>
+      <div><strong>Policy matched</strong><br>Community Guidelines · <em>Integrity &amp; Authenticity → Inorganic Gift Solicitation</em> — LIVE content must not use sympathy-based tactics or solicitation props to request money or gifts from viewers.</div>
+    </div>
+    <div class="ai-insight-row">
+      <span class="ai-insight-icon">⚖️</span>
+      <div><strong>Enforcement applied</strong><br>Your LIVE is <span class="ai-insight-cite">NR · Not Recommended</span> — removed from For You and search. Gifting is unaffected. Reach resumes <span class="ai-insight-cite">4/20/2026 10:00 AM</span>.</div>
+    </div>
+    <div class="ai-insight-row">
+      <span class="ai-insight-icon">💡</span>
+      <div><strong>How to stay compliant</strong><br>Showcase your talent or topic, not donation requests. Avoid displaying currency on-screen, pleading gestures, or sympathy framing.</div>
+    </div>
+  `,
+};
+const CHAT_NR = {
+  badgeText: 'NR 不推荐', badgeBg: 'rgba(0,122,255,.12)', badgeColor: '#007aff',
+  opening: `Your LIVE was flagged as <strong>Not Recommended (NR)</strong>. At <strong>03:22–03:58</strong> the system detected <strong>inorganic gift solicitation</strong> — visible currency / monetary imagery combined with solicitation gestures.\n\nGifting is unaffected. Questions?`,
+  selectionAck: `That segment is what the system flagged as solicitation behavior. What was happening there?`,
+  round2_A: `NR is applied when LIVE content violates our Integrity and Authenticity guidelines:\n• Soliciting money or gifts from viewers\n• Displaying signs or props requesting donations\n• Using sympathy-based tactics to solicit gifts\n\nNR is active until 4/20/2026.`,
+  round2_B: `If your content was performance art, satire, or taken out of context, pattern-matching may have misfired. Can you describe the intent behind the scene?`,
+  round2_C: `• Do not display signs requesting money or gifts\n• Avoid simulating solicitation as part of your content\n• Don't use sympathy tactics to encourage gifting\n• Focus on authentic, engaging content`,
+  round3_B_B: `The line between creative content and solicitation isn't always clear. A specialist can assess whether the NR was correctly applied given the full context.`,
+  round3_appeal: `You believe the NR was misapplied. A specialist will review the flagged segment for context.`,
+  closingMsg: `Restriction is active until 4/20/2026. Please review our guidelines before your next LIVE.`,
+};
+
+const DETAIL_INTERRUPT = {
+  id: 'interrupt', appealable: false, policy: POLICY_FORMAT_INTERRUPT,
+  iconSvg: SVG_STOP, badgeSvg: BADGE_WARN,
+  title: 'Your stream was ended',
+  statusTitle: 'Stream ended',
+  statusDate: '4/3/2026 11:58 PM - 4/4/2026 12:14 AM',
+  desc: 'Your LIVE session did not meet format verification requirements. Stream interruptions of this type are automatically applied. Please review Community Guidelines before your next LIVE. You may start a new LIVE once you have reviewed the relevant policies.',
+  videoBg: 'grad-5', videoIcon: '🧑', videoTs: '00:11–00:14',
+  showMuted: true, mutedLabel: 'Stream ended',
+  liveName: 'Late night chill 🌙', liveMeta: 'Started on 4/3/2026 at 11:58 PM',
+  liveThumbClass: 'thumb-5', liveThumbIcon: '🌙',
+  feedbackQ: 'Do you think this restriction is reasonable?',
+  reasonType: 'Format Verification Violation',
+};
+const CHAT_INTERRUPT = {
+  badgeText: '断播', badgeBg: 'rgba(0,0,0,.07)', badgeColor: '#555',
+  opening: `Your session was ended at <strong>00:14</strong> due to a <strong>format verification violation</strong>.\n\nNo appeal is needed — you can start a new LIVE once you've reviewed the guidelines. What would you like to understand?`,
+  selectionAck: `Thanks for marking that area. What was happening at that moment?`,
+  round2_A: `Format violations are triggered when a LIVE doesn't meet specific content or presentation requirements.`,
+  round2_B: `I understand this is frustrating. For stream interruptions, no formal appeal is needed — you can simply start a new LIVE after reviewing the guidelines.`,
+  round2_C: `Before your next LIVE:\n• Review Community Guidelines for format requirements\n• Ensure your setup meets our content standards`,
+  round3_B_B: `The quickest resolution is to review the guidelines and start a new LIVE session.`,
+  round3_appeal: ``,
+  noAppealMsg: `Stream interruptions don't require a formal appeal process. You can go LIVE again after reviewing the Community Guidelines.`,
+  closingMsg: `Feel free to start a new LIVE once you've reviewed the guidelines. 🌙`,
+};
+
+// History items with appeal results
+const HISTORY_ITEMS = [
+  {
+    icon: '🎁', iconColor: '#fe2c55',
+    title: 'Gifting suspended and LIVE visibility restricted',
+    reason: 'sexually suggestive content',
+    date: '4/3/2026 5:29 PM - 4/3/2026 5:33 PM',
+    badge: 'Appeal approved',
+    badgeStyle: 'background:rgba(52,199,89,.12);color:#34c759;',
+    chat: CHAT_GIFT_NR, policy: POLICY_BODY_EXPOSURE,
+    appealResult: {
+      status: 'approved',
+      iconSvg: `<svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#34c759"/><polyline points="14,24 22,32 34,18" stroke="white" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+      title: 'Appeal approved',
+      desc: 'We reviewed and approved the appeal. Gifting and visibility for your LIVE have been restored in recommendations and search results.',
+      appealReason: 'The notice is unclear. I\'m still not sure why I got this restriction.',
+      feedbackQ: 'Are you satisfied with the appeal process?',
+      restrictionTitle: 'Gifting suspended and LIVE visibility restricted',
+      restrictionStatus: 'Restriction ended',
+      restrictionDate: '4/3/2026 5:29 PM - 4/3/2026 5:33 PM',
+      restrictionDesc: 'This behavior is not in line with our policies. Gifting is suspended in this LIVE. Reason: sexually suggestive content — revealing clothing and suggestive behavior.',
+      videoThumb: 'clip-appeal-approved-thumb.jpg', videoSrc: 'clip-appeal-approved.mp4', videoTs: '12:34:56–12:35:00',
+      reasonType: 'Sexually Suggestive Content',
+      proactiveAI: null,
+    },
+  },
+  {
+    icon: '⚠️', iconColor: '#e07800',
+    title: 'LIVE visibility restricted',
+    reason: 'inorganic gift solicitation',
+    date: '4/3/2026 5:39 PM - 4/3/2026 5:42 PM',
+    badge: 'Appeal not approved',
+    badgeStyle: 'background:rgba(255,59,48,.1);color:#ff3b30;',
+    chat: CHAT_NR, policy: POLICY_BEGGING,
+    appealResult: {
+      status: 'rejected',
+      iconSvg: SVG_CAMERA,
+      badgeSvg: BADGE_PROHIBIT,
+      title: 'Appeal not approved',
+      desc: 'We reviewed your appeal and confirmed that visibility for this LIVE cannot be restored. The content was determined to contain inorganic gift solicitation.',
+      appealReason: 'My LIVE does not contain the content mentioned in the notice',
+      feedbackQ: 'Are you satisfied with the appeal process?',
+      restrictionTitle: 'LIVE visibility restricted',
+      restrictionStatus: 'Restriction ended',
+      restrictionDate: '4/3/2026 5:39 PM - 4/3/2026 5:42 PM',
+      restrictionDesc: 'This behavior is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation — visible currency / monetary imagery combined with solicitation gestures.',
+      videoThumb: 'clip-appeal-rejected-thumb.jpg', videoSrc: 'clip-appeal-rejected.mp4', videoTs: '12:34:56–12:35:00',
+      reasonType: 'Inorganic Gift Solicitation',
+      proactiveAI: 'We understand this decision may be disappointing. Our review confirmed that the flagged segment at 12:34:56–12:35:00 contained inorganic gift solicitation — specifically, visible currency / monetary imagery combined with solicitation gestures toward the camera, which violates our Integrity and Authenticity guidelines.\n\nIf you believe there are additional factors we should consider, you can use "Ask for Help" to discuss further with our AI assistant.',
+    },
+  },
+  {
+    icon: '⚠️', iconColor: '#e07800',
+    title: 'LIVE visibility restricted',
+    reason: 'inorganic gift solicitation',
+    date: '4/3/2026 4:15 PM - 4/3/2026 4:20 PM',
+    badge: 'Appeal in progress',
+    badgeStyle: 'background:rgba(255,149,0,.12);color:#ff9500;',
+    chat: CHAT_NR, policy: POLICY_BEGGING,
+    appealResult: {
+      status: 'in_progress',
+      iconSvg: `<svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="none" stroke="#ff9500" stroke-width="3"/><circle cx="24" cy="24" r="22" fill="none" stroke="#ff9500" stroke-width="3" stroke-dasharray="40 100" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="1.5s" repeatCount="indefinite"/></circle><text x="24" y="30" text-anchor="middle" fill="#ff9500" font-size="20" font-weight="700">...</text></svg>`,
+      title: 'Appeal in progress',
+      desc: 'We are currently reviewing your appeal. A specialist is examining the flagged content showing inorganic gift solicitation.',
+      appealReason: 'I understand the decision, but the restriction is too strict',
+      feedbackQ: null,
+      restrictionTitle: 'LIVE visibility restricted',
+      restrictionStatus: 'Under review',
+      restrictionDate: '4/3/2026 4:15 PM - 4/3/2026 4:20 PM',
+      restrictionDesc: 'This behaviour is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation.',
+      videoThumb: 'clip-nr-thumb.jpg', videoSrc: 'clip-nr.mp4', videoTs: '12:34:56–12:35:00',
+      reasonType: 'Inorganic Gift Solicitation',
+      proactiveAI: 'Your appeal is currently being reviewed by a specialist. While you wait, here\'s what you can learn about this type of restriction:\n\nInorganic gift solicitation is flagged when content shows a person requesting money or gifts through signs, verbal appeals, or sympathy-based gestures. This applies even to performative or scripted content.\n\nTo ensure future LIVEs stay compliant, focus on authentic content that showcases your talents or interests rather than soliciting donations.',
+      learningOnly: true,
+    },
+  },
+];
+
+const SCENARIOS = [
+  {
+    // 0: Combined scenario — all restriction types in one inbox
+    id: 'combined',
+    inbox: {
+      items: [
+        {
+          icon: '🎁', iconColor: '#fe2c55',
+          title: 'Gifting suspended and LIVE visibility restricted',
+          reason: 'sexually suggestive content',
+          date: '4/13/2026 10:00 - 4/20/2026 10:00',
+          badge: null,
+          detail: DETAIL_GIFT_NR, chat: CHAT_GIFT_NR,
+        },
+        {
+          icon: '⚠️', iconColor: '#e07800',
+          title: 'LIVE visibility restricted (v1 · static)',
+          reason: 'inorganic gift solicitation',
+          date: '4/13/2026 10:00 - 4/20/2026 10:00',
+          badge: null,
+          detail: DETAIL_NR_ORIGINAL, chat: CHAT_NR,
+        },
+        {
+          icon: '⚠️', iconColor: '#e07800',
+          title: 'LIVE visibility restricted (v2 · AI)',
+          reason: 'inorganic gift solicitation',
+          date: '4/13/2026 10:00 - 4/20/2026 10:00',
+          badge: null,
+          detail: DETAIL_NR, chat: CHAT_NR,
+        },
+      ],
+    },
+  },
+];
+
+// ═══════════════════════════════════
+//  STATE
+// ═══════════════════════════════════
+let currentScenario = 0;
+let currentItemIdx = 0;  // which inbox item is selected
+let currentDetail = null; // current item's detail data
+let currentChat = null;   // current item's chat data
+// Legacy chat state (kept for compatibility with initSelection; new chat uses chatMode/chatSelection)
+let chatRound = 0;
+let round1Choice = null;
+let appealRevealed = false;
+let selectionMade = false;
+let chatLoopCount = 0;
+
+// ═══════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════
+function hideAll() {
+  document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+}
+function setStatusBar(mode) {
+  const sb = document.getElementById('status-bar');
+  sb.classList.remove('dark', 'light');
+  sb.classList.add(mode);
+}
+
+function selectScenario(idx) {
+  currentScenario = idx;
+  const sc = SCENARIOS[idx];
+  document.getElementById('restriction-count').textContent = sc.inbox.items.length;
+}
+
+// Get the active item's detail/chat - either from the item or from the scenario fallback
+function getItemDetail(itemIdx) {
+  const sc = SCENARIOS[currentScenario];
+  const item = sc.inbox.items[itemIdx];
+  return item.detail || sc.detail;
+}
+function getItemChat(itemIdx) {
+  const sc = SCENARIOS[currentScenario];
+  const item = sc.inbox.items[itemIdx];
+  return item.chat || sc.chat;
+}
+
+function goToEndStream() {
+  hideAll();
+  setStatusBar('light');
+  document.getElementById('screen-end-stream').classList.add('active');
+}
+
+function goBackFromInbox() {
+  goToEndStream();
+}
+
+function openRestrictionInbox() {
+  const sc = SCENARIOS[currentScenario];
+  populateInbox(sc);
+  hideAll();
+  setStatusBar('light');
+  document.getElementById('screen-inbox').classList.add('active');
+}
+
+function goToInbox() {
+  hideAll();
+  setStatusBar('light');
+  document.getElementById('screen-inbox').classList.add('active');
+}
+
+function openDetail(itemIdx) {
+  currentItemIdx = itemIdx;
+  currentDetail = getItemDetail(itemIdx);
+  currentChat = getItemChat(itemIdx);
+  chatReturnScreen = 'screen-detail';
+  populateDetail(currentDetail);
+  hideAll();
+  setStatusBar('light');
+  document.getElementById('screen-detail').classList.add('active');
+}
+
+function openHistoryDetail(histIdx) {
+  currentHistoryIdx = histIdx;
+  const item = HISTORY_ITEMS[histIdx];
+  populateAppealDetail(item.appealResult);
+  hideAll();
+  setStatusBar('light');
+  document.getElementById('screen-appeal-detail').classList.add('active');
+}
+
+function closeChat() {
+  hideAll();
+  setStatusBar('light');
+  document.getElementById(chatReturnScreen).classList.add('active');
+}
+
+// ═══════════════════════════════════
+//  POPULATE INBOX
+// ═══════════════════════════════════
+function switchTab(tab) {
+  document.getElementById('tab-active').classList.toggle('active', tab === 'active');
+  document.getElementById('tab-history').classList.toggle('active', tab === 'history');
+  const list = document.getElementById('inbox-list');
+  if (tab === 'history') {
+    list.innerHTML = '';
+    document.getElementById('active-count').textContent = SCENARIOS[currentScenario].inbox.items.length;
+    document.getElementById('history-count').textContent = HISTORY_ITEMS.length;
+    HISTORY_ITEMS.forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.className = 'inbox-item';
+      div.innerHTML = `
+        <div class="inbox-item-main" onclick="openHistoryDetail(${idx})">
+          <div class="inbox-item-header">
+            <div class="inbox-item-icon">${item.icon}</div>
+            <div class="inbox-item-content">
+              <div class="inbox-item-title">${item.title}</div>
+              <div class="inbox-item-reason">${item.reason}</div>
+              <div class="inbox-item-date">${item.date}</div>
+              <div class="inbox-item-badge" style="${item.badgeStyle}">${item.badge}</div>
+            </div>
+          </div>
+          <div class="inbox-item-actions">
+            <div class="inbox-view-details">≡ View details</div>
+          </div>
+        </div>
+        <div class="inbox-tutorials" onclick="showToast('Opening tutorials...')">
+          <span class="inbox-tutorials-text">Related tutorials</span>
+          <span class="inbox-tutorials-arrow">›</span>
+        </div>
+      `;
+      list.appendChild(div);
+      if (idx < HISTORY_ITEMS.length - 1) {
+        const divider = document.createElement('div');
+        divider.className = 'inbox-divider';
+        list.appendChild(divider);
+      }
+    });
+    const footer = document.createElement('div');
+    footer.className = 'inbox-footer';
+    footer.textContent = 'Only showing history in the past 90 days.';
+    list.appendChild(footer);
+  } else {
+    populateInbox(SCENARIOS[currentScenario]);
+  }
+}
+
+function populateInbox(sc) {
+  const list = document.getElementById('inbox-list');
+  list.innerHTML = '';
+
+  // Set Active tab as selected with item count
+  document.getElementById('active-count').textContent = sc.inbox.items.length;
+  document.getElementById('history-count').textContent = HISTORY_ITEMS.length;
+  document.getElementById('tab-active').classList.add('active');
+  document.getElementById('tab-history').classList.remove('active');
+
+  sc.inbox.items.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'inbox-item';
+    div.innerHTML = `
+      <div class="inbox-item-main" onclick="openDetail(${idx})">
+        <div class="inbox-item-header">
+          <div class="inbox-item-icon">${item.icon}</div>
+          <div class="inbox-item-content">
+            <div class="inbox-item-title">${item.title}</div>
+            <div class="inbox-item-reason">${item.reason}</div>
+            <div class="inbox-item-date">${item.date}</div>
+            ${item.badge ? `<div class="inbox-item-badge">${item.badge}</div>` : ''}
+          </div>
+        </div>
+        <div class="inbox-item-actions">
+          <div class="inbox-view-details">≡ View details</div>
+        </div>
+      </div>
+      <div class="inbox-tutorials" onclick="showToast('Opening tutorials...')">
+        <span class="inbox-tutorials-text">Related tutorials</span>
+        <span class="inbox-tutorials-arrow">›</span>
+      </div>
+    `;
+    list.appendChild(div);
+
+    // Add divider between items
+    if (idx < sc.inbox.items.length - 1) {
+      const divider = document.createElement('div');
+      divider.className = 'inbox-divider';
+      list.appendChild(divider);
+    }
+  });
+
+  if (sc.inbox.footerText) {
+    const footer = document.createElement('div');
+    footer.className = 'inbox-footer';
+    footer.textContent = sc.inbox.footerText;
+    list.appendChild(footer);
+  }
+}
+
+// ═══════════════════════════════════
+//  POPULATE DETAIL
+// ═══════════════════════════════════
+function populateDetail(d) {
+  // Hero icon — SVG based
+  document.getElementById('detail-icon-main').innerHTML = d.iconSvg;
+  document.getElementById('detail-icon-badge').innerHTML = d.badgeSvg;
+  document.getElementById('detail-hero-title').textContent = d.title;
+  document.getElementById('detail-status-title').textContent = d.statusTitle;
+  document.getElementById('detail-status-date').textContent = d.statusDate;
+
+  // Restriction details: plain text OR AI-insight panel (demo)
+  const descEl = document.getElementById('detail-desc');
+  const descBadge = document.getElementById('detail-desc-badge');
+  const aiDescPanel = document.getElementById('detail-ai-desc-panel');
+  const aiDescBody = document.getElementById('detail-ai-desc-body');
+  if (d.useAIDesc && d.aiDescHtml) {
+    descEl.style.display = 'none';
+    descEl.textContent = '';
+    descBadge.style.display = 'inline-block';
+    aiDescPanel.style.display = 'block';
+    aiDescBody.innerHTML = '';
+    // Stream in the AI-generated insight after a short beat
+    setTimeout(() => streamHTMLIntoPanel(aiDescBody, d.aiDescHtml, !!d.aiDescWithActions), 400);
+  } else {
+    descEl.style.display = '';
+    descEl.textContent = d.desc;
+    descBadge.style.display = 'none';
+    aiDescPanel.style.display = 'none';
+    aiDescBody.innerHTML = '';
+  }
+
+  // Video clip
+  const videoBgEl = document.getElementById('detail-video-bg');
+  const videoIconEl = document.getElementById('detail-video-icon');
+  if (d.useVideo) {
+    videoBgEl.className = 'video-bg';
+    videoBgEl.style.background = `#000 url('${d.videoThumb}') center/contain no-repeat`;
+    videoIconEl.textContent = '';
+    videoIconEl.style.display = 'none';
+    document.getElementById('detail-video').onclick = () => {
+      openPlayer(d.videoSrc, d.reasonType, d.videoTs);
+    };
+  } else {
+    videoBgEl.className = 'video-bg ' + (d.videoBg || '');
+    videoBgEl.style.background = '';
+    videoIconEl.style.display = '';
+    videoIconEl.textContent = d.videoIcon || '';
+    document.getElementById('detail-video').onclick = null;
+  }
+  document.getElementById('detail-video-ts').textContent = d.videoTs;
+  const mutedBadge = document.getElementById('detail-muted-badge');
+  if (d.showMuted) {
+    mutedBadge.style.display = 'block';
+    mutedBadge.textContent = d.mutedLabel;
+  } else {
+    mutedBadge.style.display = 'none';
+  }
+
+  // LIVE details
+  document.getElementById('detail-live-name').textContent = d.liveName;
+  document.getElementById('detail-live-meta').textContent = d.liveMeta;
+  const thumb = document.getElementById('detail-live-thumb');
+  thumb.className = 'detail-live-thumb-inner ' + d.liveThumbClass;
+  thumb.textContent = d.liveThumbIcon;
+
+  // Feedback
+  document.getElementById('detail-feedback-q').textContent = d.feedbackQ;
+
+  // Top-right link
+  const appealLink = document.getElementById('detail-appeal-link');
+  if (d.id !== 'interrupt') {
+    appealLink.style.display = 'block';
+    appealLink.textContent = 'Appeal';
+  } else {
+    appealLink.style.display = 'none';
+  }
+
+  // Bottom buttons & link
+  const btns = document.getElementById('detail-bottom-btns');
+  const bottomLink = document.getElementById('detail-bottom-link');
+  if (d.id === 'interrupt') {
+    btns.innerHTML = `<button class="btn-primary" onclick="showToast('Ready to go LIVE!'); setTimeout(goToEndStream, 1200);">Start New LIVE</button>`;
+    bottomLink.innerHTML = 'Read our <strong>Community Guidelines</strong>';
+  } else {
+    btns.innerHTML = `<button class="btn-primary" onclick="openChat()">Ask for Help</button>`;
+    bottomLink.innerHTML = 'Have questions? <strong>Ask for Help</strong> to learn more';
+  }
+
+  // Reset feedback buttons
+  document.querySelectorAll('#detail-feedback-section .feedback-btn').forEach(b => b.classList.remove('selected'));
+
+  // Proactive AI stream for NR
+  const aiSection = document.getElementById('detail-ai-stream');
+  const aiBody = document.getElementById('detail-ai-stream-body');
+  const aiOpts = document.getElementById('detail-ai-options');
+  const bottomBar = document.getElementById('detail-bottom-bar');
+  aiOpts.style.display = 'none';
+  aiOpts.innerHTML = '';
+  if (d.proactiveAI) {
+    aiSection.style.display = 'block';
+    aiBody.innerHTML = '';
+    bottomBar.style.display = 'none'; // hide Ask for Help button — replaced by inline options
+    setTimeout(() => streamAIResponse(aiBody, d.proactiveAI, aiOpts, () => openChat()), 800);
+  } else {
+    aiSection.style.display = 'none';
+    // v2 pattern: agent entries are embedded in the AI Restriction Details panel — hide the bottom Ask for Help bar
+    bottomBar.style.display = (d.useAIDesc && d.aiDescWithActions) ? 'none' : '';
+  }
+
+  // Scroll to top
+  document.getElementById('detail-scroll').scrollTop = 0;
+}
+
+// Typewriter streaming AI response (4× faster than original: initial dots 300ms, per-char 6ms)
+// Row-by-row reveal for AI-generated HTML panels (the new "Restriction details · AI" demo)
+function streamHTMLIntoPanel(container, html, withActions) {
+  // Parse the HTML into a detached fragment and reveal one row at a time
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const rows = Array.from(tmp.querySelectorAll('.ai-insight-row'));
+  rows.forEach(r => {
+    r.style.opacity = '0';
+    r.style.transform = 'translateY(4px)';
+    r.style.transition = 'opacity .25s ease, transform .25s ease';
+  });
+  rows.forEach(r => container.appendChild(r));
+  // Reveal in sequence
+  rows.forEach((r, idx) => {
+    setTimeout(() => {
+      r.style.opacity = '1';
+      r.style.transform = 'translateY(0)';
+    }, idx * 180);
+  });
+  // Optionally append agent-entry buttons after all rows have revealed
+  if (withActions) {
+    const actionsRevealDelay = rows.length * 180 + 200;
+    setTimeout(() => {
+      const actions = document.createElement('div');
+      actions.className = 'ai-desc-actions';
+      const opts = [
+        { label: '💡 Why was my LIVE flagged?' },
+        { label: '📚 How do I avoid this next time?' },
+        { label: 'I think this is wrong', isLowlight: true },
+      ];
+      opts.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'ai-desc-action-btn' + (opt.isLowlight ? ' lowlight' : '');
+        btn.textContent = opt.label;
+        btn.onclick = () => openChat();
+        actions.appendChild(btn);
+      });
+      actions.style.opacity = '0';
+      actions.style.transition = 'opacity .3s ease';
+      container.appendChild(actions);
+      requestAnimationFrame(() => { actions.style.opacity = '1'; });
+    }, actionsRevealDelay);
+  }
+}
+
+function streamAIResponse(container, text, optionsContainer, openChatFn, learningOnly) {
+  container.innerHTML = '<span class="stream-typing"><span class="typing-dot" style="animation:typingBounce 1.2s infinite ease-in-out"></span><span class="typing-dot" style="animation:typingBounce 1.2s infinite ease-in-out .2s"></span><span class="typing-dot" style="animation:typingBounce 1.2s infinite ease-in-out .4s"></span></span>';
+  setTimeout(() => {
+    container.innerHTML = '';
+    let i = 0;
+    const cursor = document.createElement('span');
+    cursor.className = 'ai-stream-cursor';
+    container.appendChild(cursor);
+    function typeChar() {
+      if (i < text.length) {
+        if (text[i] === '\n') {
+          container.insertBefore(document.createElement('br'), cursor);
+        } else {
+          container.insertBefore(document.createTextNode(text[i]), cursor);
+        }
+        i++;
+        setTimeout(typeChar, 6);
+      } else {
+        cursor.remove();
+        // Show inline options after streaming completes
+        if (optionsContainer && openChatFn) {
+          setTimeout(() => showStreamOptions(optionsContainer, openChatFn, learningOnly), 100);
+        }
+      }
+    }
+    typeChar();
+  }, 300);
+}
+
+function showStreamOptions(container, openChatFn, learningOnly) {
+  container.style.display = 'flex';
+  container.innerHTML = '';
+  // Mirrors chat root intents — positive/neutral first, negatives pinned to end (lowlighted)
+  const opts = learningOnly ? [
+    { label: '💡 Why was my LIVE flagged?', fn: openChatFn },
+    { label: '📚 How do I avoid this next time?', fn: openChatFn },
+    { label: '⏱️ What happens now?', fn: openChatFn },
+  ] : [
+    { label: '💡 Why was my LIVE flagged?', fn: openChatFn },
+    { label: '📚 How do I avoid this next time?', fn: openChatFn },
+    { label: 'I think this is wrong', fn: openChatFn, isLowlight: true },
+  ];
+  opts.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'ai-stream-opt-btn' + (opt.isLowlight ? ' lowlight' : '');
+    btn.textContent = opt.label;
+    btn.onclick = opt.fn;
+    container.appendChild(btn);
+  });
+}
+
+let currentHistoryIdx = 0;
+let chatReturnScreen = 'screen-detail'; // track where to return after chat
+
+function populateAppealDetail(ar) {
+  // Hide Appeal link on all history appeal detail pages (since appeal was already filed)
+  document.getElementById('appeal-help-link').style.display = 'none';
+
+  // Hero icon
+  const heroIcon = document.getElementById('appeal-hero-icon');
+  if (ar.status === 'approved') {
+    heroIcon.innerHTML = ar.iconSvg;
+    heroIcon.style.display = '';
+  } else if (ar.status === 'rejected') {
+    heroIcon.innerHTML = `<div class="detail-hero-icon"><span class="detail-hero-icon-main">${ar.iconSvg}</span><span class="detail-hero-icon-badge">${ar.badgeSvg}</span></div>`;
+    heroIcon.style.display = '';
+  } else {
+    // in_progress: no top icon (cleaner look)
+    heroIcon.innerHTML = '';
+    heroIcon.style.display = 'none';
+  }
+  document.getElementById('appeal-hero-title').textContent = ar.title;
+  document.getElementById('appeal-hero-desc').textContent = ar.desc;
+  document.getElementById('appeal-reason-text').textContent = ar.appealReason;
+  document.getElementById('appeal-restriction-title').textContent = ar.restrictionTitle;
+  document.getElementById('appeal-restriction-status').textContent = ar.restrictionStatus;
+  document.getElementById('appeal-restriction-date').textContent = ar.restrictionDate;
+  document.getElementById('appeal-restriction-desc').textContent = ar.restrictionDesc;
+
+  // Feedback section
+  const fbSection = document.getElementById('appeal-feedback-section');
+  if (ar.feedbackQ) {
+    fbSection.style.display = '';
+    document.getElementById('appeal-feedback-q').textContent = ar.feedbackQ;
+    fbSection.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('selected'));
+  } else {
+    fbSection.style.display = 'none';
+  }
+
+  // Video clip
+  const avBg = document.getElementById('appeal-video-bg');
+  const avIcon = document.getElementById('appeal-video-icon');
+  const appealVideoEl = document.getElementById('appeal-video');
+  if (ar.videoThumb) {
+    avBg.className = 'video-bg';
+    avBg.style.background = `#000 url('${ar.videoThumb}') center/contain no-repeat`;
+    avIcon.textContent = '';
+    avIcon.style.display = 'none';
+    appealVideoEl.onclick = () => openPlayer(ar.videoSrc || 'clip-giftnr.mp4', ar.reasonType, ar.videoTs);
+  } else {
+    avBg.className = 'video-bg ' + (ar.videoBg || '');
+    avBg.style.background = '';
+    avIcon.style.display = '';
+    avIcon.textContent = ar.videoIcon || '';
+    appealVideoEl.onclick = null;
+  }
+  document.getElementById('appeal-video-ts').textContent = ar.videoTs;
+
+  // Proactive AI stream
+  const aiSection = document.getElementById('appeal-ai-stream');
+  const aiBody = document.getElementById('appeal-ai-stream-body');
+  const aiOpts = document.getElementById('appeal-ai-options');
+  const appealBottom = document.getElementById('appeal-bottom-bar');
+  aiOpts.style.display = 'none';
+  aiOpts.innerHTML = '';
+  if (ar.proactiveAI) {
+    aiSection.style.display = 'block';
+    aiBody.innerHTML = '';
+    appealBottom.style.display = 'none'; // hide Ask for Help — replaced by inline options
+    setTimeout(() => streamAIResponse(aiBody, ar.proactiveAI, aiOpts, () => openChatFromAppeal(), ar.learningOnly), 800);
+  } else {
+    aiSection.style.display = 'none';
+    // For 'approved' status — no Ask for Help button; hide bottom bar completely
+    if (ar.status === 'approved') {
+      appealBottom.style.display = 'none';
+    } else {
+      appealBottom.style.display = '';
+    }
+  }
+
+  document.getElementById('appeal-detail-scroll').scrollTop = 0;
+}
+
+function openChatFromAppeal() {
+  const item = HISTORY_ITEMS[currentHistoryIdx];
+  // Construct a synthetic detail with mode-driving appealStatus
+  currentDetail = {
+    id: 'appeal_hist',
+    appealable: true, // not offered in chat unless mode permits
+    appealStatus: item.appealResult.status, // 'pending' | 'approved' | 'rejected'
+    policy: item.policy || POLICY_BODY_EXPOSURE,
+    reasonType: item.appealResult.reasonType,
+    videoBg: item.appealResult.videoBg,
+    videoIcon: item.appealResult.videoIcon,
+    videoTs: item.appealResult.videoTs,
+    videoThumb: item.appealResult.videoThumb,
+    videoSrc: item.appealResult.videoSrc,
+    desc: item.appealResult.restrictionDesc,
+  };
+  currentChat = item.chat; // legacy, unused by new flow
+  chatReturnScreen = 'screen-appeal-detail';
+  openChat();
+}
+
+function selectFeedback(btn, choice) {
+  const btns = btn.parentElement.querySelectorAll('.feedback-btn');
+  btns.forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+// ═══════════════════════════════════
+//  AI CHAT — intent-driven, mode-aware
+// ═══════════════════════════════════
+// Chat state
+let chatMode = 'A';            // A=active-appealable, B=active-non-appealable, C=pending, D=approved, E=rejected
+let chatPolicy = null;         // current POLICY_* object
+let chatSelection = null;      // { ts } — frame-selection context (persistent across responses)
+let chatAppealOffered = false; // appeal only offered once per session
+let chatIntentHistory = [];    // root intents picked (for soft-cap)
+let pickedOptionLabels = new Set(); // options the user already picked — hidden on next render (reset on new chat)
+
+// ── Mode derivation ──
+function deriveMode(detail, appealStatus) {
+  if (!detail.appealable) return 'B';
+  if (appealStatus === 'pending' || appealStatus === 'in_progress') return 'C';
+  if (appealStatus === 'approved') return 'D';
+  if (appealStatus === 'rejected') return 'E';
+  return 'A';
+}
+
+// ── Template rendering: replace {TS} with current selection or clip timestamp ──
+function renderTemplate(tpl) {
+  if (!tpl) return '';
+  const ts = chatSelection?.ts || (currentDetail && currentDetail.videoTs) || '';
+  return tpl.replace(/\{TS\}/g, ts);
+}
+
+// ── Mode-aware opening message ──
+function getOpening() {
+  const p = chatPolicy;
+  const ts = (currentDetail && currentDetail.videoTs) || '';
+  if (chatMode === 'A') {
+    return `I'm here to help you understand this restriction. The flagged clip is at <strong>${ts}</strong> — you can tap the video above to review, or mark a specific region to discuss.<br><br>What would you like to know?`;
+  }
+  if (chatMode === 'B') {
+    return `I can help you understand what triggered the stream interruption at <strong>${ts}</strong>. ${p.policyDescShort}<br><br>What would you like to know?`;
+  }
+  if (chatMode === 'C') {
+    return `Your appeal is currently under review. I can't change the outcome, but I can help you understand the policy while you wait.<br><br>What would you like to know?`;
+  }
+  if (chatMode === 'D') {
+    return `Your appeal was approved. I can still walk you through what was flagged originally so you can avoid similar issues in future LIVEs.<br><br>What would you like to know?`;
+  }
+  if (chatMode === 'E') {
+    return `After review, the original decision stands. I can't change that, but I can help you understand the reasoning and what to do differently next time.<br><br>What would you like to know?`;
+  }
+  return `How can I help?`;
+}
+
+// ── Root intents (mode-filtered) — positive/neutral first, negatives at end (lowlighted) ──
+function getRootIntents() {
+  const offerDispute = (chatMode === 'A'); // only active-appealable can dispute → appeal
+  const intents = [
+    { key: 'understand', label: '💡 Why was my LIVE flagged?' },
+    { key: 'improve', label: '📚 How do I avoid this next time?' },
+    { key: 'nextSteps', label: '⏱️ What happens now?' },
+  ];
+  // Negative option pinned to the end, visually lowlighted
+  if (offerDispute) {
+    intents.push({ key: 'dispute', label: 'I think this is wrong', isLowlight: true });
+  }
+  return intents;
+}
+
+// ── Bot functions ──
+function openChat() {
+  chatPolicy = (currentDetail && currentDetail.policy) || POLICY_BODY_EXPOSURE;
+  chatMode = deriveMode(currentDetail, currentDetail.appealStatus);
+  chatSelection = null;
+  chatAppealOffered = false;
+  chatIntentHistory = [];
+  pickedOptionLabels = new Set();
+
+  // Badge
+  const chatBadge = document.getElementById('chat-punish-badge');
+  chatBadge.textContent = chatPolicy.shortName;
+  if (chatMode === 'B') {
+    chatBadge.style.background = 'rgba(0,0,0,.07)';
+    chatBadge.style.color = '#555';
+  } else if (chatMode === 'C') {
+    chatBadge.style.background = 'rgba(255,149,0,.12)';
+    chatBadge.style.color = '#ff9500';
+  } else if (chatMode === 'D') {
+    chatBadge.style.background = 'rgba(52,199,89,.12)';
+    chatBadge.style.color = '#34c759';
+  } else if (chatMode === 'E') {
+    chatBadge.style.background = 'rgba(255,59,48,.1)';
+    chatBadge.style.color = '#ff3b30';
+  } else {
+    chatBadge.style.background = 'rgba(120,60,200,.12)';
+    chatBadge.style.color = '#783cc8';
+  }
+
+  // Context card
+  document.getElementById('chat-reason-type').textContent = chatPolicy.displayName;
+  const d = currentDetail;
+  const cvBg = document.getElementById('chat-video-bg');
+  const cvIcon = document.getElementById('chat-video-icon');
+  if (d.useVideo || d.videoThumb) {
+    const thumb = d.videoThumb || '';
+    cvBg.className = 'chat-video-bg';
+    cvBg.style.background = `#000 url('${thumb}') center/contain no-repeat`;
+    cvIcon.textContent = '';
+    cvIcon.style.display = 'none';
+  } else {
+    cvBg.className = 'chat-video-bg ' + (d.videoBg || '');
+    cvBg.style.background = '';
+    cvIcon.style.display = '';
+    cvIcon.textContent = d.videoIcon || '';
+  }
+  document.getElementById('chat-video-ts').textContent = d.videoTs;
+
+  // Reset messages & appeal banner
+  document.getElementById('chat-messages').innerHTML = '';
+  // Reset text input
+  const inputEl = document.getElementById('chat-input');
+  if (inputEl) { inputEl.value = ''; document.getElementById('chat-input-send').disabled = true; }
+  document.getElementById('appeal-banner').classList.remove('visible');
+
+  // Collapse context card so chat has more space; user can tap header to expand the clip
+  const ctxBody = document.getElementById('chat-context-body');
+  const ctxChev = document.getElementById('chat-ctx-chevron');
+  ctxBody.classList.remove('open');
+  ctxChev.classList.remove('open');
+
+  hideAll();
+  setStatusBar('light');
+  document.getElementById('screen-chat').classList.add('active');
+
+  // Send opening, then root intents
+  setTimeout(() => {
+    appendAIMessage(getOpening());
+    setTimeout(() => showRootIntents(), 600);
+  }, 350);
+}
+
+// Play the flagged clip from the chat context
+function playChatClip() {
+  const d = currentDetail;
+  if (!d || !d.videoSrc) {
+    showToast('No clip to play');
+    return;
+  }
+  // Reuse the full-screen player, returning to chat on close
+  playerReturnScreen = 'screen-chat';
+  openPlayer(d.videoSrc, chatPolicy ? chatPolicy.displayName : (d.reasonType || ''), d.videoTs);
+}
+
+// ── Free-form text input ──
+function updateSendButton() {
+  const input = document.getElementById('chat-input');
+  const btn = document.getElementById('chat-input-send');
+  btn.disabled = input.value.trim().length === 0;
+}
+
+function handleChatInputKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChatInput();
+  }
+}
+
+function sendChatInput() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  updateSendButton();
+
+  appendUserMessage(text);
+  showTyping();
+
+  // Best-effort interpretation: keyword match to route to an existing intent, otherwise a fallback
+  setTimeout(() => {
+    const lower = text.toLowerCase();
+    const p = chatPolicy;
+    let reply;
+    if (/why|reason|rule|explain|understand/.test(lower)) {
+      reply = chatSelection ? renderTemplate(p.understand.withSelection) : renderTemplate(p.understand.default);
+    } else if (/avoid|prevent|next time|improve|tip|guideline/.test(lower)) {
+      reply = 'Here\'s how to stay compliant:\n\n' + p.improve.tips.map(t => `• ${t}`).join('\n');
+    } else if (/when|timeline|long|end|how long/.test(lower)) {
+      reply = renderTemplate(p.nextSteps.timeline) + '\n\n' + renderTemplate(p.nextSteps.userRights);
+    } else if (/appeal|wrong|mistake|unfair|dispute/.test(lower) && chatMode === 'A') {
+      reply = renderTemplate(p.dispute.triageQuestion);
+    } else if (/example/.test(lower)) {
+      reply = renderTemplate(p.understand.withExample);
+    } else {
+      reply = `I'm not sure I caught that — I can help with:\n\n• Why your LIVE was flagged\n• How to avoid this next time\n• What happens now\n\nTry one of the options below or rephrase your question.`;
+    }
+    appendAIMessage(reply);
+    // Keep showing whatever quick replies were up before, plus allow continuing
+  }, 900);
+}
+
+function toggleChatContext() {
+  document.getElementById('chat-context-body').classList.toggle('open');
+  document.getElementById('chat-ctx-chevron').classList.toggle('open');
+}
+
+function appendAIMessage(html) {
+  const msgs = document.getElementById('chat-messages');
+  const existing = msgs.querySelector('.typing-indicator');
+  if (existing) existing.remove();
+  const row = document.createElement('div');
+  row.className = 'agent-row';
+  row.innerHTML = `<div class="agent-avatar">🤖</div><div class="bubble-ai">${html.replace(/\n/g, '<br>')}</div>`;
+  msgs.appendChild(row);
+  scrollChat();
+}
+
+function appendUserMessage(text) {
+  const msgs = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.className = 'bubble-user';
+  el.textContent = text;
+  msgs.appendChild(el);
+  scrollChat();
+}
+
+function showTyping() {
+  const msgs = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.className = 'typing-indicator';
+  el.innerHTML = `<div class="agent-avatar">🤖</div><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  msgs.appendChild(el);
+  scrollChat();
+}
+
+function scrollChat() {
+  const msgs = document.getElementById('chat-messages');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function setQuickReplies(buttons, labelText) {
+  const qr = document.getElementById('quick-replies');
+  qr.innerHTML = `<div class="quick-replies-label">${labelText || 'Choose a reply'}</div>`;
+  // Filter out options the user already picked in this session — nav options (alwaysShow) always stay
+  buttons
+    .filter(b => b.alwaysShow || !pickedOptionLabels.has(b.label))
+    .forEach(({ label, onClick, isDanger, isLowlight, alwaysShow }) => {
+      const btn = document.createElement('button');
+      let cls = 'quick-reply-btn';
+      if (isLowlight) cls += ' lowlight';
+      else if (isDanger) cls += ' danger';
+      btn.className = cls;
+      btn.textContent = label;
+      btn.onclick = () => {
+        qr.querySelectorAll('button').forEach(b => b.disabled = true);
+        if (!alwaysShow) pickedOptionLabels.add(label);
+        onClick();
+      };
+      qr.appendChild(btn);
+    });
+}
+
+function clearQuickReplies(msg) {
+  const qr = document.getElementById('quick-replies');
+  qr.innerHTML = `<div class="quick-replies-label" style="text-align:center;padding:6px 0;">${msg || ''}</div>`;
+}
+
+// ── Root intent dispatch ──
+function showRootIntents(prompt) {
+  // Soft loop cap
+  if (chatIntentHistory.length >= 4) {
+    setQuickReplies([
+      { label: '👋 Close conversation', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.endOfLoops || 'Thanks for chatting. Come back anytime.') },
+    ], 'Enough for now?');
+    return;
+  }
+  const intents = getRootIntents();
+  const buttons = intents.map(it => ({
+    label: it.label,
+    isDanger: it.isDanger,
+    isLowlight: it.isLowlight,
+    onClick: () => pickRootIntent(it.key, it.label),
+  }));
+  // Always offer close (in-context exit)
+  buttons.push({ label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.short) });
+  setQuickReplies(buttons, prompt || (chatIntentHistory.length === 0 ? 'What would you like to know?' : 'Anything else?'));
+}
+
+function pickRootIntent(key, label) {
+  chatIntentHistory.push(key);
+  appendUserMessage(label.replace(/^[\W]+\s*/, '')); // strip emoji prefix
+  showTyping();
+  const p = chatPolicy;
+  let reply = '';
+  if (key === 'understand') {
+    reply = chatSelection ? renderTemplate(p.understand.withSelection) : renderTemplate(p.understand.default);
+  } else if (key === 'dispute') {
+    reply = renderTemplate(p.dispute.triageQuestion);
+  } else if (key === 'improve') {
+    const tips = p.improve.tips.map(t => `• ${t}`).join('\n');
+    reply = `Here's how to stay compliant:\n\n${tips}`;
+  } else if (key === 'nextSteps') {
+    reply = renderTemplate(p.nextSteps.timeline) + '\n\n' + renderTemplate(p.nextSteps.userRights);
+  }
+  setTimeout(() => {
+    appendAIMessage(reply);
+    setTimeout(() => showSecondaryIntents(key), 600);
+  }, 1100);
+}
+
+function showSecondaryIntents(rootKey) {
+  const p = chatPolicy;
+  let buttons = [];
+
+  if (rootKey === 'understand') {
+    buttons = [
+      { label: '🔍 Show me an example', onClick: () => sayAndContinue('Show me an example', renderTemplate(p.understand.withExample)) },
+      { label: '📄 What exact rule?', onClick: () => sayAndContinue('What exact rule?', renderTemplate(p.understand.withRule)) },
+      { label: '⏱️ Why this specific moment?', onClick: () => sayAndContinue('Why this specific moment?', renderTemplate(p.understand.whyThisMoment)) },
+    ];
+  } else if (rootKey === 'dispute') {
+    // Mode A only: offer triage sub-intents that can route to appeal
+    buttons = [];
+    if (p.dispute.openContext) buttons.push({ label: 'This was taken out of context', onClick: () => disputePath('openContext', 'This was taken out of context') });
+    if (p.dispute.openNotMine) buttons.push({ label: 'This wasn\'t me', onClick: () => disputePath('openNotMine', 'This wasn\'t me') });
+    if (p.dispute.allowedContent) buttons.push({ label: 'TikTok should allow this', onClick: () => disputePath('allowedContent', 'TikTok should allow content like mine') });
+  } else if (rootKey === 'improve') {
+    buttons = [
+      { label: '📖 Show me the guidelines', onClick: () => sayAndContinue('Show me the guidelines', `Here are the key resources:\n\n${p.improve.resources}`) },
+    ];
+  } else if (rootKey === 'nextSteps') {
+    const canGoLive = p.nextSteps.canGoLive || p.nextSteps.interruptRestart;
+    if (canGoLive) {
+      buttons = [
+        { label: '▶️ Can I go LIVE now?', onClick: () => sayAndContinue('Can I go LIVE now?', canGoLive) },
+      ];
+    }
+  }
+
+  // Always offer navigation
+  buttons.push({ label: '↩️ Ask something else', alwaysShow: true, onClick: () => showRootIntents('What else would you like to know?') });
+  buttons.push({ label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.short) });
+  setQuickReplies(buttons);
+}
+
+function sayAndContinue(userText, aiReply) {
+  appendUserMessage(userText);
+  showTyping();
+  setTimeout(() => {
+    appendAIMessage(aiReply);
+    setTimeout(() => showRootIntents('Anything else?'), 600);
+  }, 1000);
+}
+
+// Map chat dispute sub-intents to the modal's 5 reason items (matching indices in screen-appeal HTML)
+// 0: notice is unclear, 1: doesn't contain mentioned content, 2: TikTok should allow, 3: too strict, 4: something else
+const DISPUTE_TO_REASON_IDX = {
+  openContext: 3,       // "restriction is too strict"
+  openOutOfContext: 1,  // "doesn't contain the content mentioned"
+  openNotMine: 1,       // "doesn't contain the content mentioned"
+  allowedContent: 2,    // "TikTok should allow content like mine"
+};
+
+function disputePath(subKey, userText) {
+  appendUserMessage(userText);
+  showTyping();
+  const p = chatPolicy;
+  const reply = renderTemplate(p.dispute[subKey]);
+  setTimeout(() => {
+    appendAIMessage(reply);
+    setTimeout(() => {
+      // After triage — positive/neutral first, then the negative "File appeal" lowlighted at the end
+      const buttons = [];
+      buttons.push({ label: '💡 Actually, I understand now', onClick: () => sayAndContinue('I understand now', chatPolicy.closures.short) });
+      buttons.push({ label: '↩️ Ask something else', alwaysShow: true, onClick: () => showRootIntents('What else?') });
+      buttons.push({ label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.short) });
+      if (chatMode === 'A' && chatAppealOffered) {
+        buttons.push({ label: 'Check on my appeal', isLowlight: true, onClick: () => sayAndContinue('Check on my appeal', 'Your appeal has been submitted. A specialist will review and you\'ll be notified within 2–3 days.') });
+      } else if (chatMode === 'A' && !chatAppealOffered) {
+        // Pass the suggested reason index so the modal can pre-select it
+        const suggestedIdx = DISPUTE_TO_REASON_IDX[subKey];
+        buttons.push({ label: 'File a formal appeal', isLowlight: true, onClick: () => triggerChatAppeal(suggestedIdx) });
+      }
+      setQuickReplies(buttons);
+    }, 500);
+  }, 1100);
+}
+
+function triggerChatAppeal(suggestedReasonIdx) {
+  chatAppealOffered = true;
+  appendUserMessage('File a formal appeal');
+  showTyping();
+  setTimeout(() => {
+    const selNote = chatSelection ? ` The region you marked around <strong>${chatSelection.ts}</strong> will be attached.` : '';
+    appendAIMessage(`I'll open the appeal form now.${selNote} Your chat context will be included so the reviewer has the full picture.`);
+    setTimeout(() => {
+      // §5: chat path pre-fills the unified appeal modal with a suggested reason
+      if (typeof suggestedReasonIdx === 'number') appealSuggestedReasonIdx = suggestedReasonIdx;
+      openAppealModal();
+      setQuickReplies([
+        { label: '↩️ Back to questions', alwaysShow: true, onClick: () => showRootIntents('What else?') },
+        { label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.withAppeal) },
+      ]);
+    }, 700);
+  }, 900);
+}
+
+function endChatWith(msg) {
+  appendUserMessage('I\'m done');
+  showTyping();
+  setTimeout(() => {
+    appendAIMessage(msg || 'Thanks for chatting!');
+    clearQuickReplies('Conversation ended ✓');
+  }, 800);
+}
+
+// Legacy no-op kept so any stray callers don't crash
+function triggerAppeal() { triggerChatAppeal(); }
+
+// ═══════════════════════════════════
+//  APPEAL MODAL
+// ═══════════════════════════════════
+let selectedAppealReason = null;
+let appealContext = 'detail'; // 'detail' | 'appeal-detail' | 'chat'
+// Preserved across sessions so chat → appeal modal → submit returns the user where they started
+let appealSuggestedReasonIdx = null; // pre-filled suggestion when launched from chat dispute path
+
+function openAppealModal() {
+  // Figure out where we came from so we can preserve UX consistency
+  if (document.getElementById('screen-chat').classList.contains('active')) {
+    appealContext = 'chat';
+  } else if (document.getElementById('screen-appeal-detail').classList.contains('active')) {
+    appealContext = 'appeal-detail';
+  } else {
+    appealContext = 'detail';
+  }
+
+  selectedAppealReason = null;
+  // Reset all selections
+  document.querySelectorAll('#appeal-reasons-list .appeal-reason-item').forEach(i => i.classList.remove('selected'));
+  document.getElementById('appeal-submit-btn').disabled = true;
+
+  // Pre-fill suggested reason if chat flow requested it (§5: chat-path pre-fill)
+  if (appealContext === 'chat' && appealSuggestedReasonIdx !== null) {
+    const items = document.querySelectorAll('#appeal-reasons-list .appeal-reason-item');
+    const target = items[appealSuggestedReasonIdx];
+    if (target) {
+      target.classList.add('selected');
+      selectedAppealReason = appealSuggestedReasonIdx;
+      document.getElementById('appeal-submit-btn').disabled = false;
+    }
+  }
+  appealSuggestedReasonIdx = null; // consume
+
+  document.getElementById('appeal-modal-overlay').classList.add('active');
+}
+
+function closeAppealModal(e) {
+  if (e && e.target.id !== 'appeal-modal-overlay' && !e.target.classList.contains('appeal-modal-close')) return;
+  document.getElementById('appeal-modal-overlay').classList.remove('active');
+}
+
+function selectAppealReason(el, idx) {
+  document.querySelectorAll('#appeal-reasons-list .appeal-reason-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAppealReason = idx;
+  document.getElementById('appeal-submit-btn').disabled = false;
+}
+
+function submitAppeal() {
+  closeAppealModal({target: {id: 'appeal-modal-overlay'}});
+  showToast('Appeal submitted for review!');
+}
+
+// ═══════════════════════════════════
+//  VIDEO PLAYER
+// ═══════════════════════════════════
+let playerReturnScreen = 'screen-detail';
+
+function openPlayer(videoSrc, violationText, clipTs) {
+  // Determine which screen we're coming from (chat > detail > appeal-detail)
+  if (document.getElementById('screen-chat').classList.contains('active')) {
+    playerReturnScreen = 'screen-chat';
+  } else if (document.getElementById('screen-detail').classList.contains('active')) {
+    playerReturnScreen = 'screen-detail';
+  } else {
+    playerReturnScreen = 'screen-appeal-detail';
+  }
+
+  const video = document.getElementById('player-video');
+  video.src = videoSrc;
+  video.currentTime = 0;
+
+  // Strip any Chinese characters and clean up empty parentheses for the player
+  const cleanViolation = (violationText || '')
+    .replace(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/g, '')
+    .replace(/\(\s*[\/\-–—]*\s*\)/g, '')
+    .replace(/\s+\(\s*\)/g, '')
+    .trim();
+  document.getElementById('player-violation-bar').textContent = cleanViolation;
+
+  // Show actual LIVE broadcast timestamp
+  const tsEl = document.getElementById('player-timestamp');
+  const baseTs = clipTs || '12:34:56–12:35:00';
+  // Parse start time from clipTs (format: HH:MM:SS–HH:MM:SS)
+  const startParts = baseTs.split('–')[0].split(':').map(Number);
+  const startSec = (startParts[0]||0)*3600 + (startParts[1]||0)*60 + (startParts[2]||0);
+
+  video.ontimeupdate = () => {
+    const liveSec = startSec + video.currentTime;
+    const h = Math.floor(liveSec / 3600);
+    const m = Math.floor((liveSec % 3600) / 60);
+    const s = Math.floor(liveSec % 60);
+    const liveTs = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    tsEl.textContent = `LIVE ${liveTs}`;
+  };
+
+  hideAll();
+  setStatusBar('dark');
+  document.getElementById('screen-player').classList.add('active');
+
+  video.play().catch(() => {});
+}
+
+function closePlayer() {
+  const video = document.getElementById('player-video');
+  video.pause();
+  video.src = '';
+  video.ontimeupdate = null;
+
+  hideAll();
+  setStatusBar('light');
+  document.getElementById(playerReturnScreen).classList.add('active');
+}
+
+function formatTime(s) {
+  if (!s || isNaN(s)) return '00:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position: 'fixed', bottom: '100px', left: '50%',
+    transform: 'translateX(-50%)',
+    background: 'rgba(0,0,0,.75)', color: 'white',
+    padding: '10px 20px', borderRadius: '100px',
+    fontSize: '14px', fontWeight: '500',
+    zIndex: '999', pointerEvents: 'none',
+    transition: 'opacity .4s',
+  });
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 800);
+}
+
+// (Manual frame-selection feature removed — clip is now tap-to-play only)
+
+// Init with scenario 0 selected
+selectScenario(0);
+
+// ═══════════════════════════════════
+//  STICKY TOPBAR SCROLL SHADOW
+// ═══════════════════════════════════
+function setupScrollShadow(scrollEl, headerEl) {
+  if (!scrollEl || !headerEl) return;
+  scrollEl.addEventListener('scroll', () => {
+    headerEl.classList.toggle('scrolled', scrollEl.scrollTop > 4);
+  }, { passive: true });
+}
+
+// Wire up each scrollable screen to its topbar
+document.querySelectorAll('.app-screen').forEach(screen => {
+  const topbar = screen.querySelector('.topbar');
+  const scroll = screen.querySelector('.detail-scroll, .inbox-list, .notif-list, .end-stream-scroll');
+  if (topbar && scroll) setupScrollShadow(scroll, topbar);
+});
+
+// End-stream specific (header row is inside the scroll container)
+setupScrollShadow(
+  document.getElementById('end-stream-scroll'),
+  document.getElementById('end-stream-header')
+);
+</script>
+</body>
+</html>
