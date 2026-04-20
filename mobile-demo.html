@@ -438,6 +438,21 @@
       color: var(--text-muted);
       background: #f5f5f5;
     }
+    .inbox-impact {
+      font-size: 11px; color: var(--text-muted);
+      margin-top: 4px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .inbox-impact::before { content: '·'; }
+    /* Restriction-impact label on detail-page hero (PRD §2.1 Scenario 2) */
+    .detail-impact-pill {
+      margin-top: 10px;
+      display: inline-block;
+      font-size: 12px; font-weight: 600;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 4px 10px; border-radius: 100px;
+    }
 
     /* ═══════════════════════════════
        SCREEN: Restriction Details
@@ -776,6 +791,68 @@
       font-size: 14px; color: var(--text); line-height: 1.55;
     }
 
+    /* PRD §2.1 Scenario 3 — Layer-1 16px thumbs embedded in the bubble bottom-right;
+       fade in after typewriter completes; not present during typing. */
+    .bubble-ai-wrap { display: inline-block; max-width: 80%; }
+    .bubble-ai-wrap .bubble-ai {
+      position: relative;
+      padding-right: 56px; /* room for the embedded thumbs */
+      max-width: 100%;
+    }
+    .bubble-ai-feedback {
+      position: absolute;
+      bottom: 6px; right: 8px;
+      display: flex; gap: 4px;
+      opacity: 0; transition: opacity .35s ease;
+      pointer-events: none;
+    }
+    .bubble-ai-feedback.visible { opacity: 1; pointer-events: auto; }
+    .bubble-fb-btn {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: none; background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 13px; line-height: 1;
+      color: var(--text-muted); padding: 0;
+      transition: background .15s, color .15s, transform .15s;
+    }
+    .bubble-fb-btn:hover { background: rgba(0,0,0,.05); }
+    .bubble-fb-btn:active { transform: scale(.9); }
+    .bubble-fb-btn.selected.up { background: rgba(52,199,89,.16); color: #34c759; }
+    .bubble-fb-btn.selected.down { background: rgba(255,59,48,.14); color: #ff3b30; }
+
+    /* PRD §2.1 Scenario 4: session-level feedback bottom sheet */
+    .sheet-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.42);
+      display: none; z-index: 200;
+      align-items: flex-end; justify-content: center;
+    }
+    .sheet-overlay.active { display: flex; }
+    .sheet {
+      width: 100%; background: white;
+      border-radius: 18px 18px 0 0;
+      padding: 18px 20px 20px;
+      animation: slideUpModal .28s ease;
+    }
+    .sheet-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: #d4d4d4;
+      margin: 0 auto 14px;
+    }
+    .sheet-q { font-size: 16px; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 4px; }
+    .sheet-sub { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 16px; }
+    .sheet-opts { display: flex; flex-direction: column; gap: 8px; }
+    .sheet-opt {
+      width: 100%; padding: 13px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px; background: white;
+      font-size: 14px; color: var(--text);
+      text-align: center; cursor: pointer;
+      transition: background .15s, border-color .15s;
+      font-family: inherit;
+    }
+    .sheet-opt:active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+
     .typing-indicator { display: flex; align-items: flex-start; gap: 8px; }
     .typing-dots {
       background: #f2f2f2;
@@ -878,6 +955,19 @@
       cursor: not-allowed;
     }
     .chat-input-send:not(:disabled):active { background: var(--primary-dark); }
+
+    .ai-paused-banner {
+      margin: 8px 16px 0;
+      background: #fff6e5;
+      border: 1px solid #ff9500;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: none;
+      animation: slideUp .25s ease;
+    }
+    .ai-paused-banner.visible { display: block; }
+    .ai-paused-title { font-size: 13px; font-weight: 700; color: #c56400; margin-bottom: 2px; }
+    .ai-paused-desc { font-size: 12px; color: #8a5200; line-height: 1.4; }
 
     .appeal-banner {
       margin: 0 16px 4px;
@@ -1097,6 +1187,9 @@
       border-color: var(--primary);
       color: var(--primary);
     }
+    /* PRD §2.1 Scenario 2 — pick-once 200ms fade-out for the chosen intent */
+    .ai-stream-opt-btn { transition: opacity .2s ease, transform .2s ease, background .15s, border-color .15s; }
+    .ai-stream-opt-btn.picked { opacity: 0; transform: translateY(-4px); pointer-events: none; }
     .ai-stream-opt-btn.lowlight {
       color: var(--text-muted);
       font-size: 12px;
@@ -1285,7 +1378,7 @@
   ═══════════════════════════════ -->
   <div class="app-screen" id="screen-notifications" style="background:#f0f5f0;">
     <div class="topbar" style="background:#f0f5f0;">
-      <div class="back-btn" onclick="showToast('Back to app')">‹</div>
+      <div class="back-btn" onclick="goToEndStream()">‹</div>
       <div class="topbar-center">System notifications</div>
       <div style="width:36px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted);cursor:pointer;">⚙</div>
     </div>
@@ -1294,44 +1387,8 @@
       <div class="notif-tab active">Account updates</div>
       <div class="notif-tab">LIVE</div>
     </div>
-    <div class="notif-list">
-      <!-- LIVE violation — links to restriction flow -->
-      <div class="notif-card" onclick="goToEndStream()">
-        <div class="notif-card-category">
-          <div class="notif-cat-icon">⬆</div>
-          <span class="notif-cat-text">Account updates</span>
-        </div>
-        <div class="notif-card-title">LIVE violation</div>
-        <div class="notif-card-body">
-          Your LIVE "Evening Stream" streamed on 04/13/2026 at 10:00AM has been restricted because of a violation: Sexually Suggestive Content ... <span style="color:var(--text-muted);">∨</span> <span class="notif-card-date">5d</span>
-        </div>
-        <div class="notif-card-more">View more</div>
-      </div>
-
-      <div class="notif-card" onclick="showToast('Account update')">
-        <div class="notif-card-category">
-          <div class="notif-cat-icon">⬆</div>
-          <span class="notif-cat-text">Account updates</span>
-        </div>
-        <div class="notif-card-title">You can now log in with your email</div>
-        <div class="notif-card-body">
-          Your Google account's email address has been added to your TikTok account. You can now log in or recover your account with it. <span class="notif-card-date">Sep 24, 2025</span>
-        </div>
-        <div class="notif-card-more">View more</div>
-      </div>
-
-      <div class="notif-card" onclick="showToast('Account update')">
-        <div class="notif-card-category">
-          <div class="notif-cat-icon">⬆</div>
-          <span class="notif-cat-text">Account updates</span>
-        </div>
-        <div class="notif-card-title">Your email was updated</div>
-        <div class="notif-card-body">
-          Your email was updated to "a***7@gmail.com" on 09/24 10:32 EDT in North Carolina on device iPhone 15 Pro. If this wasn't you... <span style="color:var(--text-muted);">∨</span> <span class="notif-card-date">Sep 24, 2025</span>
-        </div>
-        <div class="notif-card-more">View more</div>
-      </div>
-    </div>
+    <!-- PRD §2.1 Scenario 1 — per-violation push (no merging), each deep-links to its violation_page -->
+    <div class="notif-list" id="notif-list"></div>
   </div>
 
   <!-- ═══════════════════════════════
@@ -1387,6 +1444,11 @@
           </div>
         </div>
         <div class="es-card-sub">Learn more about your restriction details.</div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;" onclick="event.stopPropagation(); openSystemNotifications();">
+          <span>🔔</span>
+          <span>System push notifications · 3 new</span>
+          <span style="margin-left:auto;">›</span>
+        </div>
       </div>
 
       <!-- Join Service+ -->
@@ -1516,6 +1578,7 @@
           <span class="detail-hero-icon-badge" id="detail-icon-badge"></span>
         </div>
         <div class="detail-hero-title" id="detail-hero-title"></div>
+        <span class="detail-impact-pill" id="detail-impact-pill" style="display:none;"></span>
       </div>
 
       <!-- Restriction status -->
@@ -1536,7 +1599,7 @@
         </div>
       </div>
 
-      <!-- Video clip passthrough -->
+      <!-- Violation clip passthrough (expanded — user keeps this visible) -->
       <div class="detail-video-section" id="detail-video-section">
         <div class="detail-section-title">Violation clip</div>
         <div class="video-placeholder" id="detail-video">
@@ -1716,10 +1779,30 @@
         <button class="chat-input-send" id="chat-input-send" disabled onclick="sendChatInput()">↑</button>
       </div>
     </div>
+    <!-- PRD §3.3 Layer 8 — backend killswitch banner. Shown only when ops pauses via dashboard. -->
+    <div class="ai-paused-banner" id="ai-paused-banner">
+      <div class="ai-paused-title">⚠️ AI Insight paused by operations</div>
+      <div class="ai-paused-desc" id="ai-paused-reason">Responses are degraded while the team investigates. Community Guidelines links still work.</div>
+    </div>
+
     <div class="appeal-banner" id="appeal-banner">
       <div class="appeal-banner-title">🔔 You may have grounds for an appeal</div>
       <div class="appeal-banner-desc">It sounds like you believe this enforcement action may have been an error. You can file a formal appeal to have a human specialist review your case.</div>
       <button class="appeal-banner-btn" onclick="openAppealModal()">File an Appeal</button>
+    </div>
+
+    <!-- PRD §2.1 Scenario 4: session-level feedback bottom sheet -->
+    <div class="sheet-overlay" id="session-feedback-sheet">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sheet-handle"></div>
+        <div class="sheet-q">Did this conversation help you understand the decision?</div>
+        <div class="sheet-sub">Layer 2 · session feedback</div>
+        <div class="sheet-opts">
+          <button class="sheet-opt" onclick="completeSessionFeedback('helpful')">👍 Yes, it helped</button>
+          <button class="sheet-opt" onclick="completeSessionFeedback('unhelpful')">👎 Not really</button>
+          <button class="sheet-opt" onclick="completeSessionFeedback('skip')">Just go back</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1993,19 +2076,21 @@ const POLICY_FORMAT_INTERRUPT = {
 
 // Per-item detail/chat data for each inbox item type
 
-// ── Gift Ban + NR: Sexually Suggestive Content ──
+// ── Body Exposure: Sexually Suggestive Content ──
 const DETAIL_GIFT_NR = {
   id: 'gift_nr', appealable: true, policy: POLICY_BODY_EXPOSURE,
   iconSvg: SVG_GIFT, badgeSvg: BADGE_WARN,
   title: 'Gifting suspended and LIVE visibility restricted',
   statusTitle: 'Restriction active',
-  statusDate: '4/13/2026 10:00 AM - 4/20/2026 10:00 AM',
-  desc: 'This behaviour is not in line with our policies. Gifting is suspended and your LIVE is restricted in recommendations and search results. Reason: sexually suggestive content — the LIVE contained revealing clothing and suggestive behavior that violates our Community Guidelines on Sexually Suggestive Content. Learn more in TikTok LIVE section under our Community Guidelines.',
+  statusDate: '4/13/2026 12:34 PM - 4/20/2026 12:34 PM',
+  impact: 'Gifting suspended · removed from recommendations · 7 days',
+  desc: 'This behaviour is not in line with our policies. Gifting is suspended and your LIVE is restricted in recommendations and search results. Reason: sexually suggestive content — the LIVE contained revealing clothing and suggestive behavior that violates our Community Guidelines on Sexually Suggestive Content. Learn more with AI Insight.',
   useVideo: true, videoSrc: 'clip-giftnr.mp4', videoThumb: 'clip-giftnr-thumb.jpg', videoTs: '12:34:56–12:35:00', showMuted: false,
   liveName: 'Evening Stream 💃', liveMeta: 'Started on 4/13/2026 at 10:00 AM',
   liveThumbClass: 'thumb-2', liveThumbIcon: '💃',
   feedbackQ: 'Do you think this restriction is reasonable?',
   reasonType: 'Sexually Suggestive Content',
+  proactiveAI: 'At 12:34:56 the system flagged revealing clothing combined with body-focused framing — that combination matches our Sexually Suggestive Content policy. Gifting is suspended and reach is limited until 4/20.',
 };
 const CHAT_GIFT_NR = {
   badgeText: '礼物封禁+NR', badgeBg: 'rgba(120,60,200,.12)', badgeColor: '#783cc8',
@@ -2019,21 +2104,41 @@ const CHAT_GIFT_NR = {
   closingMsg: `Restrictions are active until 4/20/2026. Please review our guidelines on appropriate content before your next LIVE.`,
 };
 
-// ── NR only: Inorganic Gift Solicitation ──
-// ── NR v1 (original pattern): static Restriction details + separate proactive AI Insight panel ──
+// ── Inorganic Gift Solicitation #1 ──
+// AI Insight pattern (per PRD §2.1 Scenario 2): static Restriction details + AI Insight chat area
 const DETAIL_NR_ORIGINAL = {
   id: 'nr', appealable: true, policy: POLICY_BEGGING,
   iconSvg: SVG_CAMERA, badgeSvg: BADGE_WARN,
   title: 'LIVE visibility restricted',
   statusTitle: 'Restriction active',
-  statusDate: '4/13/2026 10:00 AM - 4/20/2026 10:00 AM',
-  desc: 'This behaviour is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation — the LIVE contained content soliciting money or gifts from viewers, including visible currency or monetary imagery on-screen. This violates our Community Guidelines on Integrity and Authenticity. Learn more in TikTok LIVE section under our Community Guidelines.',
-  useVideo: true, videoSrc: 'clip-nr.mp4', videoThumb: 'clip-nr-thumb.jpg', videoTs: '12:34:56–12:35:00', showMuted: false,
-  liveName: 'Street Stream (v1)', liveMeta: 'Started on 4/13/2026 at 10:00 AM',
-  liveThumbClass: 'thumb-3', liveThumbIcon: '📱',
+  statusDate: '4/13/2026 1:14 PM - 4/20/2026 1:14 PM',
+  impact: 'Removed from recommendations · gifting unaffected · 7 days',
+  desc: 'This behaviour is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation — the LIVE contained content soliciting money or gifts from viewers, including visible currency or monetary imagery on-screen. This violates our Community Guidelines on Integrity and Authenticity. Learn more with AI Insight.',
+  useVideo: true, videoSrc: 'clip-nr.mp4', videoThumb: 'clip-nr-thumb.jpg', videoTs: '13:14:08–13:14:22', showMuted: false,
+  liveName: 'Evening Stream 💃', liveMeta: 'Started on 4/13/2026 at 10:00 AM',
+  liveThumbClass: 'thumb-2', liveThumbIcon: '💃',
   feedbackQ: 'Do you think this restriction is reasonable?',
   reasonType: 'Inorganic Gift Solicitation',
-  proactiveAI: 'Your LIVE was flagged because the system detected inorganic gift solicitation between 12:34:56–12:35:00. The content showed visible currency / monetary imagery on-screen combined with solicitation gestures toward the camera.\n\nThis type of content violates our guidelines on Integrity and Authenticity. LIVE streams should not use sympathy-based tactics to solicit gifts or donations from viewers.',
+  // PRD §2.1: AI Insight opens with a contextual message + 4 intent options (≤140 中文字符)
+  proactiveAI: 'At 13:14 the system flagged visible currency on-screen plus solicitation gestures — that pattern matched our Inorganic Gift Solicitation policy. Reach is limited until 4/20. Gifting is unaffected.',
+  useAIDesc: false,
+};
+
+// ── Inorganic Gift Solicitation #2 (same live_session, same type — shares ai_session with #1) ──
+const DETAIL_NR_REPEAT = {
+  id: 'nr_repeat', appealable: true, policy: POLICY_BEGGING,
+  iconSvg: SVG_CAMERA, badgeSvg: BADGE_WARN,
+  title: 'LIVE visibility restricted',
+  statusTitle: 'Restriction active',
+  statusDate: '4/13/2026 1:42 PM - 4/20/2026 1:42 PM',
+  impact: 'Reach limit extended · gifting unaffected · 7 days',
+  desc: 'This behaviour is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation — repeated solicitation pattern detected later in the same LIVE.',
+  useVideo: true, videoSrc: 'clip-nr-v2.mp4', videoThumb: 'clip-nr-v2-thumb.jpg', videoTs: '13:42:31–13:42:48', showMuted: false,
+  liveName: 'Evening Stream 💃', liveMeta: 'Started on 4/13/2026 at 10:00 AM',
+  liveThumbClass: 'thumb-2', liveThumbIcon: '💃',
+  feedbackQ: 'Do you think this restriction is reasonable?',
+  reasonType: 'Inorganic Gift Solicitation',
+  proactiveAI: 'At 13:42 the system again detected currency-on-screen plus pleading gestures — same Inorganic Gift Solicitation pattern as the earlier flag at 13:14. Reach limit extended.',
   useAIDesc: false,
 };
 
@@ -2044,7 +2149,7 @@ const DETAIL_NR = {
   title: 'LIVE visibility restricted',
   statusTitle: 'Restriction active',
   statusDate: '4/13/2026 10:00 AM - 4/20/2026 10:00 AM',
-  desc: 'This behaviour is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation — the LIVE contained content soliciting money or gifts from viewers, including visible currency or monetary imagery on-screen. This violates our Community Guidelines on Integrity and Authenticity. Learn more in TikTok LIVE section under our Community Guidelines.',
+  desc: 'This behaviour is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation — the LIVE contained content soliciting money or gifts from viewers, including visible currency or monetary imagery on-screen. This violates our Community Guidelines on Integrity and Authenticity. Learn more with AI Insight.',
   // v2 uses its own clip to avoid duplicating v1's video
   useVideo: true, videoSrc: 'clip-nr-v2.mp4', videoThumb: 'clip-nr-v2-thumb.jpg', videoTs: '12:34:56–12:35:00', showMuted: false,
   liveName: 'Street Stream (v2)', liveMeta: 'Started on 4/13/2026 at 10:00 AM',
@@ -2162,7 +2267,8 @@ const HISTORY_ITEMS = [
       restrictionDesc: 'This behavior is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation — visible currency / monetary imagery combined with solicitation gestures.',
       videoThumb: 'clip-appeal-rejected-thumb.jpg', videoSrc: 'clip-appeal-rejected.mp4', videoTs: '12:34:56–12:35:00',
       reasonType: 'Inorganic Gift Solicitation',
-      proactiveAI: 'We understand this decision may be disappointing. Our review confirmed that the flagged segment at 12:34:56–12:35:00 contained inorganic gift solicitation — specifically, visible currency / monetary imagery combined with solicitation gestures toward the camera, which violates our Integrity and Authenticity guidelines.\n\nIf you believe there are additional factors we should consider, you can use "Ask for Help" to discuss further with our AI assistant.',
+      // PRD §2.1: AI Insight stays available post-appeal as an education channel (not appeal channel)
+      proactiveAI: 'Reviewer confirmed inorganic gift solicitation at 12:34:56 — visible currency plus solicitation gestures. Restriction stands. Want to dig into the policy or how to avoid it next time?',
     },
   },
   {
@@ -2186,41 +2292,62 @@ const HISTORY_ITEMS = [
       restrictionDesc: 'This behaviour is not in line with our policies. Your LIVE is restricted in recommendations and search results. Reason: inorganic gift solicitation.',
       videoThumb: 'clip-nr-thumb.jpg', videoSrc: 'clip-nr.mp4', videoTs: '12:34:56–12:35:00',
       reasonType: 'Inorganic Gift Solicitation',
-      proactiveAI: 'Your appeal is currently being reviewed by a specialist. While you wait, here\'s what you can learn about this type of restriction:\n\nInorganic gift solicitation is flagged when content shows a person requesting money or gifts through signs, verbal appeals, or sympathy-based gestures. This applies even to performative or scripted content.\n\nTo ensure future LIVEs stay compliant, focus on authentic content that showcases your talents or interests rather than soliciting donations.',
+      // PRD §2.1: while review is pending, AI Insight only educates — no dispute path (learningOnly hides the disagree intent)
+      proactiveAI: 'Your appeal is under review. I can\'t change that, but I can walk you through the policy or how to avoid this next LIVE while you wait.',
       learningOnly: true,
     },
   },
 ];
 
+// PRD §2.2 — multi-violation under one live_session, shared AI context per violation_type
+const LIVE_SESSION_EVENING = {
+  id: 'ls_2026_04_13_evening',
+  name: 'Evening Stream 💃',
+  startedAt: '4/13/2026 at 10:00 AM',
+  durationLabel: '4h 22m · ended 2:22 PM',
+};
+
 const SCENARIOS = [
   {
-    // 0: Combined scenario — all restriction types in one inbox
-    id: 'combined',
+    id: 'phase1_mvp',
     inbox: {
+      liveSessions: [LIVE_SESSION_EVENING],
       items: [
         {
+          violation_id: 'v_001',
+          violation_type: 'body_exposure',
+          live_session_id: LIVE_SESSION_EVENING.id,
+          ai_session_id: `${LIVE_SESSION_EVENING.id}:body_exposure`,
           icon: '🎁', iconColor: '#fe2c55',
           title: 'Gifting suspended and LIVE visibility restricted',
           reason: 'sexually suggestive content',
-          date: '4/13/2026 10:00 - 4/20/2026 10:00',
+          date: '4/13/2026 12:34 PM',
           badge: null,
           detail: DETAIL_GIFT_NR, chat: CHAT_GIFT_NR,
         },
         {
+          violation_id: 'v_002',
+          violation_type: 'inorganic_gift_solicitation',
+          live_session_id: LIVE_SESSION_EVENING.id,
+          ai_session_id: `${LIVE_SESSION_EVENING.id}:inorganic_gift_solicitation`,
           icon: '⚠️', iconColor: '#e07800',
-          title: 'LIVE visibility restricted (v1 · static)',
+          title: 'LIVE visibility restricted',
           reason: 'inorganic gift solicitation',
-          date: '4/13/2026 10:00 - 4/20/2026 10:00',
+          date: '4/13/2026 1:14 PM',
           badge: null,
           detail: DETAIL_NR_ORIGINAL, chat: CHAT_NR,
         },
         {
+          violation_id: 'v_003',
+          violation_type: 'inorganic_gift_solicitation',
+          live_session_id: LIVE_SESSION_EVENING.id,
+          ai_session_id: `${LIVE_SESSION_EVENING.id}:inorganic_gift_solicitation`,
           icon: '⚠️', iconColor: '#e07800',
-          title: 'LIVE visibility restricted (v2 · AI)',
-          reason: 'inorganic gift solicitation',
-          date: '4/13/2026 10:00 - 4/20/2026 10:00',
+          title: 'LIVE visibility restricted',
+          reason: 'inorganic gift solicitation (repeat)',
+          date: '4/13/2026 1:42 PM',
           badge: null,
-          detail: DETAIL_NR, chat: CHAT_NR,
+          detail: DETAIL_NR_REPEAT, chat: CHAT_NR,
         },
       ],
     },
@@ -2231,9 +2358,10 @@ const SCENARIOS = [
 //  STATE
 // ═══════════════════════════════════
 let currentScenario = 0;
-let currentItemIdx = 0;  // which inbox item is selected
-let currentDetail = null; // current item's detail data
-let currentChat = null;   // current item's chat data
+let currentItemIdx = 0;     // which inbox item is selected
+let currentItem = null;     // PRD §2.2 — full inbox item (carries violation_id / ai_session_id)
+let currentDetail = null;   // current item's detail data
+let currentChat = null;     // current item's chat data
 // Legacy chat state (kept for compatibility with initSelection; new chat uses chatMode/chatSelection)
 let chatRound = 0;
 let round1Choice = null;
@@ -2289,6 +2417,65 @@ function openRestrictionInbox() {
   document.getElementById('screen-inbox').classList.add('active');
 }
 
+// PRD §2.1 Scenario 1 — render per-violation push notifications + deep-link to violation page
+function openSystemNotifications() {
+  populatePushNotifications();
+  hideAll();
+  setStatusBar('light');
+  document.getElementById('screen-notifications').classList.add('active');
+}
+
+function populatePushNotifications() {
+  const list = document.getElementById('notif-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const sc = SCENARIOS[currentScenario];
+  // One push per violation — no backend merging (PRD §2.1)
+  sc.inbox.items.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'notif-card';
+    card.onclick = () => deepLinkToViolation(idx);
+    card.innerHTML = `
+      <div class="notif-card-category">
+        <div class="notif-cat-icon">⚠</div>
+        <span class="notif-cat-text">LIVE violation</span>
+      </div>
+      <div class="notif-card-title">${item.title}</div>
+      <div class="notif-card-body">
+        Reason: <strong>${item.reason}</strong> · ${item.date}. Tap to learn why and what to do next.
+        <span class="notif-card-date" style="margin-left:8px;">live://restriction/${item.violation_id}</span>
+      </div>
+      <div class="notif-card-more">Tap to learn details ›</div>
+    `;
+    list.appendChild(card);
+  });
+  // Keep the original generic notifications for visual realism
+  const generic = [
+    { title: 'You can now log in with your email', body: 'Your Google account\'s email address has been added to your TikTok account.' },
+    { title: 'Your email was updated', body: 'Your email was updated on 09/24 10:32 EDT on device iPhone 15 Pro. If this wasn\'t you...' },
+  ];
+  generic.forEach(n => {
+    const card = document.createElement('div');
+    card.className = 'notif-card';
+    card.onclick = () => showToast('Account update');
+    card.innerHTML = `
+      <div class="notif-card-category">
+        <div class="notif-cat-icon">⬆</div>
+        <span class="notif-cat-text">Account updates</span>
+      </div>
+      <div class="notif-card-title">${n.title}</div>
+      <div class="notif-card-body">${n.body} <span class="notif-card-date">Sep 24, 2025</span></div>
+      <div class="notif-card-more">View more</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function deepLinkToViolation(itemIdx) {
+  // Match PRD: tap push → directly into the per-violation page (skip end-stream / inbox)
+  openDetail(itemIdx);
+}
+
 function goToInbox() {
   hideAll();
   setStatusBar('light');
@@ -2297,9 +2484,14 @@ function goToInbox() {
 
 function openDetail(itemIdx) {
   currentItemIdx = itemIdx;
+  const sc = SCENARIOS[currentScenario];
+  currentItem = sc.inbox.items[itemIdx];           // PRD §2.2 — keep violation metadata around
   currentDetail = getItemDetail(itemIdx);
   currentChat = getItemChat(itemIdx);
   chatReturnScreen = 'screen-detail';
+  // Refresh editable templates — the 800ms setTimeout in populateDetail reads d.proactiveAI
+  // after applyTemplateOverrides has mutated it, so the stream picks up the latest copy.
+  fetchTemplates();
   populateDetail(currentDetail);
   hideAll();
   setStatusBar('light');
@@ -2316,6 +2508,31 @@ function openHistoryDetail(histIdx) {
 }
 
 function closeChat() {
+  // PRD §2.1 Scenario 4: if ≥2 turns and Layer-1 feedback is sparse → ask Layer-2 question
+  const sameDirectionFeedback = Math.max(layer1Counts.up, layer1Counts.down);
+  const shouldAskSession = chatTurnCount >= 2 && sameDirectionFeedback < 3 && !sessionFeedbackGiven;
+  if (shouldAskSession) {
+    document.getElementById('session-feedback-sheet').classList.add('active');
+    return;
+  }
+  finalizeCloseChat();
+}
+
+function completeSessionFeedback(choice) {
+  sessionFeedbackGiven = true;
+  document.getElementById('session-feedback-sheet').classList.remove('active');
+  if (choice === 'helpful') showToast('Layer 2 · 👍 helpful · logged');
+  else if (choice === 'unhelpful') showToast('Layer 2 · 👎 not helpful · logged');
+  beacon('POST', `/api/sessions/${encodeURIComponent(currentItem ? currentItem.ai_session_id : 'unknown')}/feedback`, {
+    choice,
+    violation_id: currentItem && currentItem.violation_id,
+    turnCount: chatTurnCount,
+    layer1: layer1Counts,
+  });
+  finalizeCloseChat();
+}
+
+function finalizeCloseChat() {
   hideAll();
   setStatusBar('light');
   document.getElementById(chatReturnScreen).classList.add('active');
@@ -2350,8 +2567,8 @@ function switchTab(tab) {
             <div class="inbox-view-details">≡ View details</div>
           </div>
         </div>
-        <div class="inbox-tutorials" onclick="showToast('Opening tutorials...')">
-          <span class="inbox-tutorials-text">Related tutorials</span>
+        <div class="inbox-tutorials" onclick="event.stopPropagation(); openDetail(${idx});">
+          <span class="inbox-tutorials-text">View details</span>
           <span class="inbox-tutorials-arrow">›</span>
         </div>
       `;
@@ -2375,39 +2592,63 @@ function populateInbox(sc) {
   const list = document.getElementById('inbox-list');
   list.innerHTML = '';
 
-  // Set Active tab as selected with item count
   document.getElementById('active-count').textContent = sc.inbox.items.length;
   document.getElementById('history-count').textContent = HISTORY_ITEMS.length;
   document.getElementById('tab-active').classList.add('active');
   document.getElementById('tab-history').classList.remove('active');
 
+  // PRD §2.2 — group items by live_session_id; preserve order of first appearance
+  const groups = [];
+  const groupIndexById = {};
   sc.inbox.items.forEach((item, idx) => {
-    const div = document.createElement('div');
-    div.className = 'inbox-item';
-    div.innerHTML = `
-      <div class="inbox-item-main" onclick="openDetail(${idx})">
-        <div class="inbox-item-header">
-          <div class="inbox-item-icon">${item.icon}</div>
-          <div class="inbox-item-content">
-            <div class="inbox-item-title">${item.title}</div>
-            <div class="inbox-item-reason">${item.reason}</div>
-            <div class="inbox-item-date">${item.date}</div>
-            ${item.badge ? `<div class="inbox-item-badge">${item.badge}</div>` : ''}
+    const key = item.live_session_id || '_ungrouped';
+    if (!(key in groupIndexById)) {
+      groupIndexById[key] = groups.length;
+      const sessionMeta = (sc.inbox.liveSessions || []).find(s => s.id === key) || null;
+      groups.push({ key, sessionMeta, items: [] });
+    }
+    groups[groupIndexById[key]].items.push({ item, idx });
+  });
+
+  groups.forEach((group, groupIdx) => {
+    group.items.forEach(({ item, idx }, withinGroupIdx) => {
+      const div = document.createElement('div');
+      div.className = 'inbox-item';
+      const impact = item.detail && item.detail.impact ? `<div class="inbox-impact">${item.detail.impact}</div>` : '';
+      div.innerHTML = `
+        <div class="inbox-item-main" onclick="openDetail(${idx})">
+          <div class="inbox-item-header">
+            <div class="inbox-item-icon">${item.icon}</div>
+            <div class="inbox-item-content">
+              <div class="inbox-item-title">${item.title}</div>
+              <div class="inbox-item-reason">${item.reason}</div>
+              <div class="inbox-item-date">${item.date}</div>
+              ${impact}
+              ${item.badge ? `<div class="inbox-item-badge">${item.badge}</div>` : ''}
+            </div>
+          </div>
+          <div class="inbox-item-actions">
+            <div class="inbox-view-details">≡ View details</div>
           </div>
         </div>
-        <div class="inbox-item-actions">
-          <div class="inbox-view-details">≡ View details</div>
+        <div class="inbox-tutorials" onclick="event.stopPropagation(); openDetail(${idx});">
+          <span class="inbox-tutorials-text">View details</span>
+          <span class="inbox-tutorials-arrow">›</span>
         </div>
-      </div>
-      <div class="inbox-tutorials" onclick="showToast('Opening tutorials...')">
-        <span class="inbox-tutorials-text">Related tutorials</span>
-        <span class="inbox-tutorials-arrow">›</span>
-      </div>
-    `;
-    list.appendChild(div);
+      `;
+      list.appendChild(div);
 
-    // Add divider between items
-    if (idx < sc.inbox.items.length - 1) {
+      if (withinGroupIdx < group.items.length - 1) {
+        const divider = document.createElement('div');
+        divider.className = 'inbox-divider';
+        divider.style.height = '1px';
+        divider.style.background = '#eee';
+        divider.style.margin = '0 20px';
+        list.appendChild(divider);
+      }
+    });
+
+    if (groupIdx < groups.length - 1) {
       const divider = document.createElement('div');
       divider.className = 'inbox-divider';
       list.appendChild(divider);
@@ -2430,6 +2671,14 @@ function populateDetail(d) {
   document.getElementById('detail-icon-main').innerHTML = d.iconSvg;
   document.getElementById('detail-icon-badge').innerHTML = d.badgeSvg;
   document.getElementById('detail-hero-title').textContent = d.title;
+  // PRD §2.1 Scenario 2 — restriction-impact label at the top
+  const impactPill = document.getElementById('detail-impact-pill');
+  if (d.impact) {
+    impactPill.textContent = d.impact;
+    impactPill.style.display = 'inline-block';
+  } else {
+    impactPill.style.display = 'none';
+  }
   document.getElementById('detail-status-title').textContent = d.statusTitle;
   document.getElementById('detail-status-date').textContent = d.statusDate;
 
@@ -2525,7 +2774,7 @@ function populateDetail(d) {
     aiSection.style.display = 'block';
     aiBody.innerHTML = '';
     bottomBar.style.display = 'none'; // hide Ask for Help button — replaced by inline options
-    setTimeout(() => streamAIResponse(aiBody, d.proactiveAI, aiOpts, () => openChat()), 800);
+    setTimeout(() => streamAIResponse(aiBody, d.proactiveAI, aiOpts, (intentKey) => openChat(intentKey)), 800);
   } else {
     aiSection.style.display = 'none';
     // v2 pattern: agent entries are embedded in the AI Restriction Details panel — hide the bottom Ask for Help bar
@@ -2582,6 +2831,7 @@ function streamHTMLIntoPanel(container, html, withActions) {
   }
 }
 
+// PRD §2.1 Scenario 3: typewriter at 25ms/char — visual rhythm for Phase 2 SSE migration
 function streamAIResponse(container, text, optionsContainer, openChatFn, learningOnly) {
   container.innerHTML = '<span class="stream-typing"><span class="typing-dot" style="animation:typingBounce 1.2s infinite ease-in-out"></span><span class="typing-dot" style="animation:typingBounce 1.2s infinite ease-in-out .2s"></span><span class="typing-dot" style="animation:typingBounce 1.2s infinite ease-in-out .4s"></span></span>';
   setTimeout(() => {
@@ -2598,10 +2848,9 @@ function streamAIResponse(container, text, optionsContainer, openChatFn, learnin
           container.insertBefore(document.createTextNode(text[i]), cursor);
         }
         i++;
-        setTimeout(typeChar, 6);
+        setTimeout(typeChar, 25);
       } else {
         cursor.remove();
-        // Show inline options after streaming completes
         if (optionsContainer && openChatFn) {
           setTimeout(() => showStreamOptions(optionsContainer, openChatFn, learningOnly), 100);
         }
@@ -2611,24 +2860,28 @@ function streamAIResponse(container, text, optionsContainer, openChatFn, learnin
   }, 300);
 }
 
+// PRD §2.1: 4 intents, all visually equal (no dark-pattern lowlight) + pick-once 200ms fade
 function showStreamOptions(container, openChatFn, learningOnly) {
   container.style.display = 'flex';
   container.innerHTML = '';
-  // Mirrors chat root intents — positive/neutral first, negatives pinned to end (lowlighted)
-  const opts = learningOnly ? [
-    { label: '💡 Why was my LIVE flagged?', fn: openChatFn },
-    { label: '📚 How do I avoid this next time?', fn: openChatFn },
-    { label: '⏱️ What happens now?', fn: openChatFn },
-  ] : [
-    { label: '💡 Why was my LIVE flagged?', fn: openChatFn },
-    { label: '📚 How do I avoid this next time?', fn: openChatFn },
-    { label: 'I think this is wrong', fn: openChatFn, isLowlight: true },
+  const opts = [
+    { key: 'understand', label: '💡 Why was my LIVE flagged?' },
+    { key: 'improve',    label: '📚 How do I avoid this next time?' },
+    { key: 'nextSteps',  label: '⏱️ What happens now?' },
+    { key: 'disagree',   label: '🤔 I have a different view' },
   ];
-  opts.forEach(opt => {
+  // Hide the disagree option for learning-only history (appeal already in progress)
+  const visible = learningOnly ? opts.slice(0, 3) : opts;
+  visible.forEach(opt => {
     const btn = document.createElement('button');
-    btn.className = 'ai-stream-opt-btn' + (opt.isLowlight ? ' lowlight' : '');
+    btn.className = 'ai-stream-opt-btn';
     btn.textContent = opt.label;
-    btn.onclick = opt.fn;
+    btn.onclick = () => {
+      // Pick-once: fade chosen button out (200ms), siblings stay (will be hidden when chat opens)
+      btn.classList.add('picked');
+      Array.from(container.querySelectorAll('.ai-stream-opt-btn')).forEach(b => { if (b !== btn) b.disabled = true; });
+      setTimeout(() => openChatFn(opt.key), 220);
+    };
     container.appendChild(btn);
   });
 }
@@ -2701,7 +2954,7 @@ function populateAppealDetail(ar) {
     aiSection.style.display = 'block';
     aiBody.innerHTML = '';
     appealBottom.style.display = 'none'; // hide Ask for Help — replaced by inline options
-    setTimeout(() => streamAIResponse(aiBody, ar.proactiveAI, aiOpts, () => openChatFromAppeal(), ar.learningOnly), 800);
+    setTimeout(() => streamAIResponse(aiBody, ar.proactiveAI, aiOpts, (intentKey) => openChatFromAppeal(intentKey), ar.learningOnly), 800);
   } else {
     aiSection.style.display = 'none';
     // For 'approved' status — no Ask for Help button; hide bottom bar completely
@@ -2715,12 +2968,11 @@ function populateAppealDetail(ar) {
   document.getElementById('appeal-detail-scroll').scrollTop = 0;
 }
 
-function openChatFromAppeal() {
+function openChatFromAppeal(preselectedIntentKey) {
   const item = HISTORY_ITEMS[currentHistoryIdx];
-  // Construct a synthetic detail with mode-driving appealStatus
   currentDetail = {
     id: 'appeal_hist',
-    appealable: true, // not offered in chat unless mode permits
+    appealable: true, // chat mode-derive will hide dispute path for non-A modes
     appealStatus: item.appealResult.status, // 'pending' | 'approved' | 'rejected'
     policy: item.policy || POLICY_BODY_EXPOSURE,
     reasonType: item.appealResult.reasonType,
@@ -2733,7 +2985,7 @@ function openChatFromAppeal() {
   };
   currentChat = item.chat; // legacy, unused by new flow
   chatReturnScreen = 'screen-appeal-detail';
-  openChat();
+  openChat(preselectedIntentKey);
 }
 
 function selectFeedback(btn, choice) {
@@ -2752,6 +3004,162 @@ let chatSelection = null;      // { ts } — frame-selection context (persistent
 let chatAppealOffered = false; // appeal only offered once per session
 let chatIntentHistory = [];    // root intents picked (for soft-cap)
 let pickedOptionLabels = new Set(); // options the user already picked — hidden on next render (reset on new chat)
+// PRD §2.1: turn-counting + 3-tier feedback bookkeeping
+let chatTurnCount = 0;                          // user→AI exchanges in this session
+let layer1Counts = { up: 0, down: 0 };          // message-level 👍/👎 totals (for skip logic)
+let sessionFeedbackGiven = false;               // Layer-2 sheet only triggered once per session
+let pendingChatIntent = null;                   // intent picked on Violation Page → opens chat with it preselected
+
+// ───────────────────────────────────────────────────────────────
+// PRD §3 · Mock backend beacons + editable-template fetch.
+// No-ops cleanly if the backend is down — demo still works standalone.
+// ───────────────────────────────────────────────────────────────
+const BACKEND_ROOT = (location.protocol === 'http:' || location.protocol === 'https:') ? location.origin : null;
+let backendHealthy = !!BACKEND_ROOT;       // flipped to false on the first network failure
+let aiPausedByOps = false;                 // reflects the server-side killswitch
+
+function beacon(method, path, body) {
+  if (!BACKEND_ROOT || !backendHealthy) return Promise.resolve(null);
+  return fetch(BACKEND_ROOT + path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(async r => {
+    const text = await r.text();
+    let parsed = null; try { parsed = text ? JSON.parse(text) : null; } catch (_) {}
+    return { status: r.status, body: parsed };
+  }).catch(() => {
+    backendHealthy = false; // subsequent beacons no-op so demo keeps working offline
+    return null;
+  });
+}
+
+// ── Editable template runtime ────────────────────────────────────
+// Keyed by dot-path. When the dashboard "Templates" tab saves, the mobile
+// demo picks up the new copy on its next fetch (boot + every openChat).
+const TEMPLATE_RUNTIME = {};
+
+function getTemplate(key, fallback) {
+  return (key in TEMPLATE_RUNTIME) ? TEMPLATE_RUNTIME[key] : fallback;
+}
+
+async function fetchTemplates() {
+  if (!BACKEND_ROOT || !backendHealthy) return;
+  try {
+    const r = await fetch(BACKEND_ROOT + '/api/templates');
+    if (!r.ok) return;
+    const data = await r.json();
+    const ts = data.templates || {};
+    Object.keys(ts).forEach(k => { TEMPLATE_RUNTIME[k] = ts[k].content; });
+    applyTemplateOverrides();
+  } catch (_) { /* demo keeps working with hardcoded defaults */ }
+}
+
+// Apply fetched overrides onto the hardcoded POLICY_* + DETAIL_* objects in place.
+// The rendering code already reads from those objects, so no other edits needed.
+function applyTemplateOverrides() {
+  // Proactive AI Insight per Violation Page (keyed by violation_id → DETAIL_* object)
+  const VIOLATION_TO_DETAIL = {
+    'v_001': (typeof DETAIL_GIFT_NR      !== 'undefined') ? DETAIL_GIFT_NR      : null,
+    'v_002': (typeof DETAIL_NR_ORIGINAL  !== 'undefined') ? DETAIL_NR_ORIGINAL  : null,
+    'v_003': (typeof DETAIL_NR_REPEAT    !== 'undefined') ? DETAIL_NR_REPEAT    : null,
+  };
+  Object.keys(VIOLATION_TO_DETAIL).forEach(vid => {
+    const d = VIOLATION_TO_DETAIL[vid];
+    const override = TEMPLATE_RUNTIME['proactiveAI.' + vid];
+    if (d && override) d.proactiveAI = override;
+  });
+
+  // Chat responses per policy · intent
+  const POLICY_BY_ID = {
+    'inorganic_gift_solicitation': (typeof POLICY_BEGGING       !== 'undefined') ? POLICY_BEGGING       : null,
+    'body_exposure':               (typeof POLICY_BODY_EXPOSURE !== 'undefined') ? POLICY_BODY_EXPOSURE : null,
+  };
+  Object.keys(POLICY_BY_ID).forEach(pid => {
+    const p = POLICY_BY_ID[pid];
+    if (!p) return;
+    const u = TEMPLATE_RUNTIME['chat.' + pid + '.understand'];
+    const i = TEMPLATE_RUNTIME['chat.' + pid + '.improve'];
+    const n = TEMPLATE_RUNTIME['chat.' + pid + '.nextSteps'];
+    if (u) p.understand.default = u;
+    if (i) p.improve.overrideText = i;    // consumed in pickRootIntent when present
+    if (n) p.nextSteps.overrideText = n;  // consumed in pickRootIntent when present
+  });
+}
+
+// PRD §2.2 / §3.4 — persistent ai_session registry, scoped by (live_session, violation_type)
+// Keeps cross-violation context (sibling intents) and per-violation conversation history.
+// localStorage-backed so re-entering a Violation Page resumes the chat.
+const AI_SESSION_STORAGE_PREFIX = 'aiInsight.session.';
+const aiSessions = {};
+
+function loadAISession(aiSessionId) {
+  if (aiSessions[aiSessionId]) return aiSessions[aiSessionId];
+  let snapshot = null;
+  try { snapshot = JSON.parse(localStorage.getItem(AI_SESSION_STORAGE_PREFIX + aiSessionId) || 'null'); } catch (_) {}
+  aiSessions[aiSessionId] = snapshot || {
+    aiSessionId,
+    violationsTouched: [],          // ordered violation_ids the user has actually opened a chat for
+    intentsByViolation: {},         // { vid: ['understand', 'improve'] }
+    messagesByViolation: {},        // { vid: [{ role:'ai'|'user', html:string }] }
+  };
+  return aiSessions[aiSessionId];
+}
+
+function saveAISession(aiSessionId) {
+  const sess = aiSessions[aiSessionId];
+  if (!sess) return;
+  try { localStorage.setItem(AI_SESSION_STORAGE_PREFIX + aiSessionId, JSON.stringify(sess)); } catch (_) {}
+}
+
+function recordAIMessage(role, html) {
+  if (!currentItem) return;
+  const sess = loadAISession(currentItem.ai_session_id);
+  const vid = currentItem.violation_id;
+  if (!sess.messagesByViolation[vid]) sess.messagesByViolation[vid] = [];
+  sess.messagesByViolation[vid].push({ role, html });
+  saveAISession(currentItem.ai_session_id);
+  // Backend beacon (fire-and-forget)
+  beacon('POST', `/api/sessions/${encodeURIComponent(currentItem.ai_session_id)}/messages`, {
+    role, text: html, violation_id: vid, turn: chatTurnCount,
+  });
+}
+
+function recordIntent(intentKey) {
+  if (!currentItem) return;
+  const sess = loadAISession(currentItem.ai_session_id);
+  const vid = currentItem.violation_id;
+  if (!sess.intentsByViolation[vid]) sess.intentsByViolation[vid] = [];
+  if (!sess.intentsByViolation[vid].includes(intentKey)) sess.intentsByViolation[vid].push(intentKey);
+  if (!sess.violationsTouched.includes(vid)) sess.violationsTouched.push(vid);
+  saveAISession(currentItem.ai_session_id);
+  beacon('POST', `/api/sessions/${encodeURIComponent(currentItem.ai_session_id)}/intents`, {
+    intent: intentKey, violation_id: vid, label: (INTENT_LABELS[intentKey] || intentKey),
+  });
+}
+
+// "What rank is this violation among same-type siblings the user has actually engaged with?"
+function getSiblingContext() {
+  if (!currentItem) return null;
+  const sess = loadAISession(currentItem.ai_session_id);
+  const vid = currentItem.violation_id;
+  if (!sess.violationsTouched.includes(vid)) sess.violationsTouched = sess.violationsTouched.concat(vid);
+  const rank = sess.violationsTouched.indexOf(vid) + 1;
+  const total = sess.violationsTouched.length;
+  // Pick prior sibling (most recent before this one) to surface a hand-back
+  const priorVid = sess.violationsTouched.filter(v => v !== vid).pop();
+  const priorIntents = priorVid ? (sess.intentsByViolation[priorVid] || []) : [];
+  return { rank, total, priorVid, priorIntents, hasPrior: !!priorVid };
+}
+
+// Reset all stored sessions — exposed for QA / demo reset
+function resetAISessions() {
+  Object.keys(aiSessions).forEach(k => delete aiSessions[k]);
+  Object.keys(localStorage)
+    .filter(k => k.startsWith(AI_SESSION_STORAGE_PREFIX))
+    .forEach(k => localStorage.removeItem(k));
+  showToast('AI sessions reset');
+}
 
 // ── Mode derivation ──
 function deriveMode(detail, appealStatus) {
@@ -2769,51 +3177,72 @@ function renderTemplate(tpl) {
   return tpl.replace(/\{TS\}/g, ts);
 }
 
+const INTENT_LABELS = {
+  understand: 'why your LIVE was flagged',
+  improve:    'how to avoid this next time',
+  nextSteps:  'what happens now',
+  disagree:   'why this might be wrong',
+};
+
+// PRD §2.2 — surface the AI session aggregation: same-type sibling already discussed.
+function getSiblingPrefix() {
+  const ctx = getSiblingContext();
+  if (!ctx || !ctx.hasPrior) return '';
+  const prior = ctx.priorIntents.map(k => INTENT_LABELS[k]).filter(Boolean);
+  const priorPhrase = prior.length ? `Earlier we walked through ${prior.join(' and ')}.` : `Earlier you opened the previous flag.`;
+  return `<strong>This is your 2nd <em>${(currentItem && currentItem.violation_type || '').replace(/_/g, ' ')}</em> flag in this LIVE.</strong> ${priorPhrase} I'll keep that context here.<br><br>`;
+}
+
 // ── Mode-aware opening message ──
 function getOpening() {
   const p = chatPolicy;
   const ts = (currentDetail && currentDetail.videoTs) || '';
+  const prefix = getSiblingPrefix();
   if (chatMode === 'A') {
-    return `I'm here to help you understand this restriction. The flagged clip is at <strong>${ts}</strong> — you can tap the video above to review, or mark a specific region to discuss.<br><br>What would you like to know?`;
+    return prefix + `I'm here to help you understand this restriction. The flagged clip is at <strong>${ts}</strong> — tap the video above to review.<br><br>What would you like to know?`;
   }
   if (chatMode === 'B') {
-    return `I can help you understand what triggered the stream interruption at <strong>${ts}</strong>. ${p.policyDescShort}<br><br>What would you like to know?`;
+    return prefix + `I can help you understand what triggered the stream interruption at <strong>${ts}</strong>. ${p.policyDescShort}<br><br>What would you like to know?`;
   }
   if (chatMode === 'C') {
-    return `Your appeal is currently under review. I can't change the outcome, but I can help you understand the policy while you wait.<br><br>What would you like to know?`;
+    return prefix + `Your appeal is currently under review. I can't change the outcome, but I can help you understand the policy while you wait.<br><br>What would you like to know?`;
   }
   if (chatMode === 'D') {
-    return `Your appeal was approved. I can still walk you through what was flagged originally so you can avoid similar issues in future LIVEs.<br><br>What would you like to know?`;
+    return prefix + `Your appeal was approved. I can still walk you through what was flagged originally so you can avoid similar issues in future LIVEs.<br><br>What would you like to know?`;
   }
   if (chatMode === 'E') {
-    return `After review, the original decision stands. I can't change that, but I can help you understand the reasoning and what to do differently next time.<br><br>What would you like to know?`;
+    return prefix + `After review, the original decision stands. I can't change that, but I can help you understand the reasoning and what to do differently next time.<br><br>What would you like to know?`;
   }
-  return `How can I help?`;
+  return prefix + `How can I help?`;
 }
 
-// ── Root intents (mode-filtered) — positive/neutral first, negatives at end (lowlighted) ──
+// PRD §2.1: 4 intents, all visually equal — no dark-pattern lowlight
 function getRootIntents() {
   const offerDispute = (chatMode === 'A'); // only active-appealable can dispute → appeal
   const intents = [
     { key: 'understand', label: '💡 Why was my LIVE flagged?' },
-    { key: 'improve', label: '📚 How do I avoid this next time?' },
-    { key: 'nextSteps', label: '⏱️ What happens now?' },
+    { key: 'improve',    label: '📚 How do I avoid this next time?' },
+    { key: 'nextSteps',  label: '⏱️ What happens now?' },
   ];
-  // Negative option pinned to the end, visually lowlighted
   if (offerDispute) {
-    intents.push({ key: 'dispute', label: 'I think this is wrong', isLowlight: true });
+    intents.push({ key: 'dispute', label: '🤔 I have a different view' });
   }
   return intents;
 }
 
 // ── Bot functions ──
-function openChat() {
+function openChat(preselectedIntentKey) {
   chatPolicy = (currentDetail && currentDetail.policy) || POLICY_BODY_EXPOSURE;
   chatMode = deriveMode(currentDetail, currentDetail.appealStatus);
   chatSelection = null;
   chatAppealOffered = false;
   chatIntentHistory = [];
   pickedOptionLabels = new Set();
+  // PRD §2.1 / §3.5 — reset turn + Layer-1/Layer-2 bookkeeping per session
+  chatTurnCount = 0;
+  layer1Counts = { up: 0, down: 0 };
+  sessionFeedbackGiven = false;
+  pendingChatIntent = (typeof preselectedIntentKey === 'string') ? preselectedIntentKey : null;
 
   // Badge
   const chatBadge = document.getElementById('chat-punish-badge');
@@ -2871,11 +3300,83 @@ function openChat() {
   setStatusBar('light');
   document.getElementById('screen-chat').classList.add('active');
 
-  // Send opening, then root intents
+  // Refresh editable templates — 350ms opener setTimeout below gives it time to land
+  fetchTemplates();
+
+  // PRD §3.3 Layer 8 — notify backend (fire-and-forget), reflect killswitch state
+  if (currentItem) {
+    beacon('POST', `/api/sessions/${encodeURIComponent(currentItem.ai_session_id)}/open`, {
+      ai_session_id:    currentItem.ai_session_id,
+      violation_id:     currentItem.violation_id,
+      violation_type:   currentItem.violation_type,
+      live_session_id:  currentItem.live_session_id,
+    }).then(resp => {
+      if (!resp) { setAIPausedBanner(false); return; }
+      const ks = (resp.body && resp.body.killswitch) || {};
+      setAIPausedBanner(!!ks.active, ks.reason);
+    });
+  }
+
+  // PRD §3.4 — restore persisted conversation if any (instant, no typewriter)
+  if (currentItem) {
+    const sess = loadAISession(currentItem.ai_session_id);
+    const prior = sess.messagesByViolation[currentItem.violation_id];
+    if (prior && prior.length) {
+      prior.forEach(m => {
+        if (m.role === 'ai') appendAIMessageInstant(m.html);
+        else appendUserMessageInstant(m.html);
+      });
+      setTimeout(() => showRootIntents('Welcome back. What else would you like to know?'), 350);
+      return;
+    }
+  }
+
+  // Fresh chat — stream opening, then either auto-pick a preselected intent or show 4 root intents
   setTimeout(() => {
-    appendAIMessage(getOpening());
-    setTimeout(() => showRootIntents(), 600);
+    appendAIMessage(getOpening(), () => {
+      const intent = pendingChatIntent;
+      pendingChatIntent = null;
+      if (intent) {
+        const all = getRootIntents();
+        const match = all.find(it => it.key === intent);
+        if (match) {
+          setTimeout(() => pickRootIntent(match.key, match.label), 350);
+          return;
+        }
+      }
+      setTimeout(() => showRootIntents(), 200);
+    });
   }, 350);
+}
+
+// Instant render (no typewriter) used when restoring persisted history
+function appendAIMessageInstant(html) {
+  const msgs = document.getElementById('chat-messages');
+  const row = document.createElement('div');
+  row.className = 'agent-row';
+  const safe = clampToCharLimit(html).replace(/\n/g, '<br>');
+  row.innerHTML = `
+    <div class="agent-avatar">🤖</div>
+    <div class="bubble-ai-wrap">
+      <div class="bubble-ai">
+        <span class="bubble-ai-text">${safe}</span>
+        <div class="bubble-ai-feedback visible">
+          <button class="bubble-fb-btn" aria-label="Helpful" data-dir="up">👍</button>
+          <button class="bubble-fb-btn" aria-label="Not helpful" data-dir="down">👎</button>
+        </div>
+      </div>
+    </div>`;
+  msgs.appendChild(row);
+  wireMessageFeedback(row.querySelector('.bubble-ai-feedback'));
+  scrollChat();
+}
+function appendUserMessageInstant(text) {
+  const msgs = document.getElementById('chat-messages');
+  const el = document.createElement('div');
+  el.className = 'bubble-user';
+  el.textContent = text;
+  msgs.appendChild(el);
+  scrollChat();
 }
 
 // Play the flagged clip from the chat context
@@ -2933,7 +3434,6 @@ function sendChatInput() {
       reply = `I'm not sure I caught that — I can help with:\n\n• Why your LIVE was flagged\n• How to avoid this next time\n• What happens now\n\nTry one of the options below or rephrase your question.`;
     }
     appendAIMessage(reply);
-    // Keep showing whatever quick replies were up before, plus allow continuing
   }, 900);
 }
 
@@ -2942,15 +3442,94 @@ function toggleChatContext() {
   document.getElementById('chat-ctx-chevron').classList.toggle('open');
 }
 
-function appendAIMessage(html) {
+
+// PRD §2.1 Scenario 3 + §3.5: typewriter @ 25ms/char with hard char ceiling,
+// then fade-in Layer-1 👍/👎 once typing completes.
+// Spec is 140 CN chars; 320 here ≈ same visual width in English (demo defensive cap).
+const AI_OUTPUT_CHAR_LIMIT = 320;
+function clampToCharLimit(html) {
+  // Strip tags only for the length check, keep the original markup intact when under cap
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const visible = tmp.textContent || '';
+  if (visible.length <= AI_OUTPUT_CHAR_LIMIT) return html;
+  // Over cap → re-render as plain text so we can safely truncate without breaking tags
+  return tmp.textContent.slice(0, AI_OUTPUT_CHAR_LIMIT - 1) + '…';
+}
+
+function appendAIMessage(html, onDone) {
   const msgs = document.getElementById('chat-messages');
   const existing = msgs.querySelector('.typing-indicator');
   if (existing) existing.remove();
   const row = document.createElement('div');
   row.className = 'agent-row';
-  row.innerHTML = `<div class="agent-avatar">🤖</div><div class="bubble-ai">${html.replace(/\n/g, '<br>')}</div>`;
+  const safe = clampToCharLimit(html).replace(/\n/g, '<br>');
+  // PRD §2.1 Scenario 3 — thumbs embedded in bubble bottom-right; absent during typing
+  row.innerHTML = `
+    <div class="agent-avatar">🤖</div>
+    <div class="bubble-ai-wrap">
+      <div class="bubble-ai">
+        <span class="bubble-ai-text"></span>
+        <div class="bubble-ai-feedback">
+          <button class="bubble-fb-btn" aria-label="Helpful" data-dir="up">👍</button>
+          <button class="bubble-fb-btn" aria-label="Not helpful" data-dir="down">👎</button>
+        </div>
+      </div>
+    </div>`;
   msgs.appendChild(row);
   scrollChat();
+
+  const textEl = row.querySelector('.bubble-ai-text');
+  const feedback = row.querySelector('.bubble-ai-feedback');
+
+  // Typewriter pass — feed one HTML "token" at a time so tags render intact
+  const tokens = safe.match(/<[^>]+>|&[a-z]+;|./g) || [];
+  let i = 0;
+  function step() {
+    if (i >= tokens.length) {
+      feedback.classList.add('visible');
+      wireMessageFeedback(feedback);
+      recordAIMessage('ai', html); // PRD §3.4 — persist after typing finishes
+      if (typeof onDone === 'function') onDone();
+      return;
+    }
+    textEl.insertAdjacentHTML('beforeend', tokens[i++]);
+    scrollChat();
+    setTimeout(step, 25);
+  }
+  step();
+}
+
+function wireMessageFeedback(container) {
+  container.querySelectorAll('.bubble-fb-btn').forEach(btn => {
+    btn.onclick = () => {
+      const dir = btn.dataset.dir;
+      const wasSelected = btn.classList.contains('selected');
+      container.querySelectorAll('.bubble-fb-btn').forEach(b => b.classList.remove('selected', 'up', 'down'));
+      if (wasSelected) return; // toggle off
+      btn.classList.add('selected', dir);
+      layer1Counts[dir] = (layer1Counts[dir] || 0) + 1;
+      showToast(dir === 'up' ? 'Layer 1 · 👍 logged' : 'Layer 1 · 👎 logged');
+      beacon('POST', '/api/messages/feedback', {
+        direction: dir,
+        ai_session_id: currentItem && currentItem.ai_session_id,
+        violation_id:  currentItem && currentItem.violation_id,
+        turn: chatTurnCount,
+      });
+    };
+  });
+}
+
+function setAIPausedBanner(active, reason) {
+  aiPausedByOps = !!active;
+  const b = document.getElementById('ai-paused-banner');
+  if (!b) return;
+  if (active) {
+    if (reason) document.getElementById('ai-paused-reason').textContent = reason;
+    b.classList.add('visible');
+  } else {
+    b.classList.remove('visible');
+  }
 }
 
 function appendUserMessage(text) {
@@ -2959,6 +3538,8 @@ function appendUserMessage(text) {
   el.className = 'bubble-user';
   el.textContent = text;
   msgs.appendChild(el);
+  chatTurnCount++;
+  recordAIMessage('user', text); // PRD §3.4 — persist user turn
   scrollChat();
 }
 
@@ -3026,6 +3607,7 @@ function showRootIntents(prompt) {
 
 function pickRootIntent(key, label) {
   chatIntentHistory.push(key);
+  recordIntent(key); // PRD §2.2 — feed sibling-context registry
   appendUserMessage(label.replace(/^[\W]+\s*/, '')); // strip emoji prefix
   showTyping();
   const p = chatPolicy;
@@ -3035,14 +3617,22 @@ function pickRootIntent(key, label) {
   } else if (key === 'dispute') {
     reply = renderTemplate(p.dispute.triageQuestion);
   } else if (key === 'improve') {
-    const tips = p.improve.tips.map(t => `• ${t}`).join('\n');
-    reply = `Here's how to stay compliant:\n\n${tips}`;
+    // Honor server-side override if ops edited it via dashboard; else assemble from tips[]
+    if (p.improve.overrideText) {
+      reply = renderTemplate(p.improve.overrideText);
+    } else {
+      const tips = p.improve.tips.map(t => `• ${t}`).join('\n');
+      reply = `Here's how to stay compliant:\n\n${tips}`;
+    }
   } else if (key === 'nextSteps') {
-    reply = renderTemplate(p.nextSteps.timeline) + '\n\n' + renderTemplate(p.nextSteps.userRights);
+    if (p.nextSteps.overrideText) {
+      reply = renderTemplate(p.nextSteps.overrideText);
+    } else {
+      reply = renderTemplate(p.nextSteps.timeline) + '\n\n' + renderTemplate(p.nextSteps.userRights);
+    }
   }
   setTimeout(() => {
-    appendAIMessage(reply);
-    setTimeout(() => showSecondaryIntents(key), 600);
+    appendAIMessage(reply, () => setTimeout(() => showSecondaryIntents(key), 250));
   }, 1100);
 }
 
@@ -3085,8 +3675,7 @@ function sayAndContinue(userText, aiReply) {
   appendUserMessage(userText);
   showTyping();
   setTimeout(() => {
-    appendAIMessage(aiReply);
-    setTimeout(() => showRootIntents('Anything else?'), 600);
+    appendAIMessage(aiReply, () => setTimeout(() => showRootIntents('Anything else?'), 250));
   }, 1000);
 }
 
@@ -3105,22 +3694,20 @@ function disputePath(subKey, userText) {
   const p = chatPolicy;
   const reply = renderTemplate(p.dispute[subKey]);
   setTimeout(() => {
-    appendAIMessage(reply);
-    setTimeout(() => {
-      // After triage — positive/neutral first, then the negative "File appeal" lowlighted at the end
+    appendAIMessage(reply, () => setTimeout(() => {
+      // PRD §2.1 / §5: keep dispute → File appeal entry visually equal (no lowlight)
       const buttons = [];
       buttons.push({ label: '💡 Actually, I understand now', onClick: () => sayAndContinue('I understand now', chatPolicy.closures.short) });
       buttons.push({ label: '↩️ Ask something else', alwaysShow: true, onClick: () => showRootIntents('What else?') });
       buttons.push({ label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.short) });
       if (chatMode === 'A' && chatAppealOffered) {
-        buttons.push({ label: 'Check on my appeal', isLowlight: true, onClick: () => sayAndContinue('Check on my appeal', 'Your appeal has been submitted. A specialist will review and you\'ll be notified within 2–3 days.') });
+        buttons.push({ label: 'Check on my appeal', onClick: () => sayAndContinue('Check on my appeal', 'Your appeal has been submitted. A specialist will review and you\'ll be notified within 2–3 days.') });
       } else if (chatMode === 'A' && !chatAppealOffered) {
-        // Pass the suggested reason index so the modal can pre-select it
         const suggestedIdx = DISPUTE_TO_REASON_IDX[subKey];
-        buttons.push({ label: 'File a formal appeal', isLowlight: true, onClick: () => triggerChatAppeal(suggestedIdx) });
+        buttons.push({ label: '📝 File a formal appeal', onClick: () => triggerChatAppeal(suggestedIdx) });
       }
       setQuickReplies(buttons);
-    }, 500);
+    }, 250));
   }, 1100);
 }
 
@@ -3130,16 +3717,15 @@ function triggerChatAppeal(suggestedReasonIdx) {
   showTyping();
   setTimeout(() => {
     const selNote = chatSelection ? ` The region you marked around <strong>${chatSelection.ts}</strong> will be attached.` : '';
-    appendAIMessage(`I'll open the appeal form now.${selNote} Your chat context will be included so the reviewer has the full picture.`);
-    setTimeout(() => {
-      // §5: chat path pre-fills the unified appeal modal with a suggested reason
+    // PRD §2.1 Scenario 5: AI does not draft the user's appeal text — pre-fill is option-based only
+    appendAIMessage(`I'll open the appeal form now.${selNote} Pick a reason below — your chat context goes to the reviewer, but you write your own statement.`, () => setTimeout(() => {
       if (typeof suggestedReasonIdx === 'number') appealSuggestedReasonIdx = suggestedReasonIdx;
       openAppealModal();
       setQuickReplies([
         { label: '↩️ Back to questions', alwaysShow: true, onClick: () => showRootIntents('What else?') },
         { label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.withAppeal) },
       ]);
-    }, 700);
+    }, 250));
   }, 900);
 }
 
@@ -3147,8 +3733,14 @@ function endChatWith(msg) {
   appendUserMessage('I\'m done');
   showTyping();
   setTimeout(() => {
-    appendAIMessage(msg || 'Thanks for chatting!');
-    clearQuickReplies('Conversation ended ✓');
+    appendAIMessage(msg || 'Thanks for chatting!', () => {
+      clearQuickReplies('Conversation ended ✓');
+      // PRD §2.1 Scenario 4: gate Layer-2 sheet on turn count + Layer-1 sparsity
+      const sameDirectionFeedback = Math.max(layer1Counts.up, layer1Counts.down);
+      if (chatTurnCount >= 2 && sameDirectionFeedback < 3 && !sessionFeedbackGiven) {
+        setTimeout(() => document.getElementById('session-feedback-sheet').classList.add('active'), 600);
+      }
+    });
   }, 800);
 }
 
@@ -3299,6 +3891,8 @@ function showToast(msg) {
 
 // Init with scenario 0 selected
 selectScenario(0);
+// Fetch editable templates on boot — refreshes DETAIL_*.proactiveAI + POLICY_* overrides
+fetchTemplates();
 
 // ═══════════════════════════════════
 //  STICKY TOPBAR SCROLL SHADOW

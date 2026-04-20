@@ -1,54 +1,52 @@
-# Violation Clip Demo (Mobile)
+# TikTok LIVE · AI Insight Demo (Mobile)
 
-TikTok LIVE violation notice & AI chatbot prototype — iPhone 17 sized, single-file HTML demo.
+Self-contained mobile prototype of the AI Insight violation-education flow described in the [TikTok LIVE AI Insight PRD](TikTok_LIVE_AI_Insight_PRD.docx). Single-file HTML, no build step, sized for iPhone 17 (402 × 874).
 
 ## How to run
 
-Open `mobile-demo.html` in any modern browser (Chrome, Safari, Edge, Firefox).
-
-Self-contained — no server, no build step, no dependencies. All videos and thumbnails load via relative paths.
+Open `mobile-demo.html` in any modern browser (Chrome, Safari, Edge, Firefox). Videos and thumbnails load via relative paths — keep the `clip-*.mp4` / `clip-*.jpg` files alongside it.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `mobile-demo.html` | The entire demo — HTML + CSS + JS in one file |
-| `clip-giftnr.mp4` / `.jpg` | Gift Ban + NR (Body Exposure) clip + first-frame thumbnail |
-| `clip-nr.mp4` / `.jpg` | NR (Begging & Solicitation) clip + thumbnail |
-| `clip-appeal-approved.mp4` / `.jpg` | "Appeal approved" history video |
-| `clip-appeal-rejected.mp4` / `.jpg` | "Appeal not approved" history video |
+| `mobile-demo.html` | Entire demo — HTML + CSS + JS in one file |
+| `clip-nr.mp4` / `.jpg` | Inorganic Gift Solicitation clip + first-frame thumb |
+| `clip-appeal-approved.mp4` / `.jpg` | History · Appeal approved video |
+| `clip-appeal-rejected.mp4` / `.jpg` | History · Appeal not approved video |
+| `clip-giftnr.mp4` / `.jpg` | History · Sexually-suggestive (no AI insight) video |
 
 ## App flow
 
-1. **End-stream page** (light theme) — Congratulations screen with stats, rewards, and `⚠️ Restrictions (3)` entry card
-2. **Restrictions inbox** — Active (3) / History (3) tabs
-3. **Active detail pages** (3 items):
-   - Gift Ban + NR (Body Exposure) — standard pattern
-   - LIVE visibility restricted **v1 · static** — original pattern (static text description + separate bottom "AI Insight" streaming panel)
-   - LIVE visibility restricted **v2 · AI** — new pattern (Restriction Details block IS the AI insight panel with embedded agent-entry buttons; no separate bottom AI panel)
-4. **History detail pages** — appeal approved / appeal not approved / appeal in progress
-5. **Violation clip player** — full-screen video with `LIVE 12:34:56` timestamp overlay
-6. **AI chatbot** — intent-driven conversation (Understand / Improve / Next steps / I think this is wrong)
-7. **Appeal modal** — unified reason selection, shared across all entry points (top-right Appeal link and in-chat File an Appeal)
+1. **End-stream page** (light theme) — Congratulations screen, ⚠️ Restrictions (1) entry card.
+2. **Restrictions inbox** — Active (1) / History (3) tabs.
+3. **Active detail page** — single AI Insight pattern:
+   - Restriction header + status
+   - Plain-text Restriction details (offline, factual)
+   - Violation clip (tap to play)
+   - **AI Insight panel** — typewriter opening message (25 ms/char) + 4 equal-weight intent options (`💡 Why was my LIVE flagged?` · `📚 How do I avoid this?` · `⏱️ What happens now?` · `🤔 I have a different view`)
+4. **History detail pages**:
+   - *Appeal approved* — no AI insight (educational value already delivered by the favourable outcome)
+   - *Appeal not approved* — AI Insight chat area with educational opener + intents (no dispute path)
+   - *Appeal in progress* — AI Insight chat area in learning-only mode (3 intents, dispute hidden while review pending)
+5. **AI chat** — picking an intent on the Violation Page deep-links into the chat with that intent already selected.
+6. **Appeal modal** — unified reason selection, shared by the top-right Appeal link and in-chat "File a formal appeal".
 
-## AI bot architecture
+## PRD UX patterns wired in
 
-- **Data**: per-violation `POLICY_BODY_EXPOSURE` / `POLICY_BEGGING` / `POLICY_FORMAT_INTERRUPT` — single source of truth (policy text, response templates by intent, mode messages, closures)
-- **Mode model**: `chatMode` in {A, B, C, D, E} derived from `(detail.appealable, appealStatus)` — hides dispute/appeal paths in non-appealable states
-- **Intent-driven flow**: user picks root intent → AI response → secondary intents or back-to-root → "I'm done" ends anytime
-- **Pick-once**: options the user already selected are hidden from subsequent menus (nav options like "I'm done" always shown)
-- **Negative options** (e.g. "I think this is wrong") pinned to end of list and lowlighted (gray)
-- **Text input**: free-form input at the bottom of chat with keyword-based routing to intent templates
-- **Collapsed context**: entering chat auto-collapses the clip preview so messages get more room; tap header to expand; tap video to play full-screen
-- **Unified appeal**: in-chat "File a formal appeal" opens the same reason modal as the top-right Appeal link, with chat context pre-filling the suggested reason
-- **Speed**: streaming effect is a typewriter animation (6ms/char — 4× faster than initial), not a real LLM
+| PRD ref | Behaviour |
+|---------|-----------|
+| §2.1 Scenario 2 | 4 visually-equal intents — no dark-pattern lowlight; pick-once (selected option disappears) |
+| §2.1 Scenario 3 | Typewriter at 25 ms/char; per-message Layer-1 👍/👎 fades in once typing completes |
+| §3.5 Layer 1 | Message-level feedback toggles + counts logged |
+| §2.1 Scenario 4 | Layer-2 session feedback bottom sheet — appears on close when chat had ≥2 turns and Layer-1 has <3 same-direction votes |
+| §2.1 Scenario 5 | Top-right Appeal link **and** in-chat "File a formal appeal" funnel into the same option-pick modal; AI never drafts the user's appeal text |
+| §3.4 Persistent | Each violation has its own conversation surface; opening AI Insight from the Violation Page or appeal-result page reuses the same intent flow |
 
-## v1 vs v2 comparison
+## "LLM" (preset interaction)
 
-Click into **LIVE visibility restricted (v1 · static)** vs **(v2 · AI)** to compare:
-- v1 = old pattern — factual text + separate AI panel at bottom
-- v2 = new pattern — AI drives the Restriction Details block itself, with embedded action buttons
+All responses are hardcoded templates in `POLICY_BEGGING` / `POLICY_BODY_EXPOSURE`. The typewriter is `setTimeout` animation — no LLM calls. The 140-char (CN) limit is enforced client-side via `clampToCharLimit`. To wire up a real model, swap the `appendAIMessage` typewriter for SSE/fetch-stream with the same templates as system prompts.
 
 ## Not a production system
 
-All responses are hardcoded templates in JS. Streaming is `setTimeout` animation. To wire up a real LLM, replace `streamAIResponse()` with SSE/fetch-stream from a backend proxy and feed the `POLICY_*.understand/dispute/improve/nextSteps` templates as system prompts.
+UX-only prototype for design review and stakeholder walk-throughs. Real backend, RAG retrieval, attack-classifier, citation hard-match etc. live in the §3 architecture chapter of the PRD.
