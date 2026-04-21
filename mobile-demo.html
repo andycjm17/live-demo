@@ -622,7 +622,7 @@
     .grad-4 { background: linear-gradient(135deg, #3d1a1a, #5c2a2a, #4a1f1f); }
     .grad-5 { background: linear-gradient(135deg, #1e1e3a, #2a1a4a, #1a0d2e); }
 
-    /* Feedback section */
+    /* Feedback section (legacy · still used by some non-restriction spots) */
     .detail-feedback {
       padding: 16px;
       background: #f5f5f5;
@@ -653,6 +653,60 @@
       border-color: var(--primary);
       background: var(--primary-light);
       color: var(--primary);
+    }
+
+    /* ── Track C · Restriction-agreement feedback (civic/ballot palette) ───
+       Intentionally distinct from the chat thumbs (Track A/B purple family)
+       so viewers immediately read this as "do you agree with the decision?"
+       instead of "did the AI help?". PRD §4.1 dark-pattern checklist clean. */
+    .detail-agreement {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin: 0 20px 14px;
+      padding: 18px 18px 16px;
+      text-align: center;
+    }
+    .detail-agreement-label {
+      font-size: 15px; font-weight: 700; color: var(--text);
+    }
+    .detail-agreement-desc {
+      font-size: 12px; color: var(--text-muted);
+      margin-top: 4px; margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .detail-agreement-btns {
+      display: flex; gap: 10px;
+    }
+    .detail-agreement-btn {
+      flex: 1;
+      height: 44px; border-radius: 100px;
+      border: 1.5px solid var(--border);
+      background: white;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px;
+      font: inherit; font-size: 13px; font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s, transform .12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .detail-agreement-btn:active { transform: scale(.97); }
+    .detail-agreement-icon {
+      font-size: 15px; line-height: 1; margin-right: 2px;
+      color: currentColor;
+    }
+    .detail-agreement-btn.agree:active,
+    .detail-agreement-btn.agree.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+    .detail-agreement-btn.disagree:active,
+    .detail-agreement-btn.disagree.selected {
+      border-color: #5a7388;
+      background: rgba(90, 115, 136, .08);
+      color: #2c4558;
     }
 
     /* Bottom CTA */
@@ -820,7 +874,18 @@
     .bubble-fb-btn.selected.up { background: rgba(52,199,89,.16); color: #34c759; }
     .bubble-fb-btn.selected.down { background: rgba(255,59,48,.14); color: #ff3b30; }
 
-    /* PRD §2.1 Scenario 4: session-level feedback bottom sheet */
+    /* Source tag under AI bubble — shows whether this turn came from Claude or the template fallback */
+    .bubble-source {
+      font-size: 10px; color: var(--text-muted);
+      margin: 2px 0 0 4px; padding: 0;
+      letter-spacing: .1px;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .bubble-source.claude   { color: #783cc8; }
+    .bubble-source.template { color: #8a8a93; }
+
+    /* PRD §2.1 Scenario 4: session-level feedback bottom sheet.
+       Track AB (chat-quality) · purple family · shares metaphor with in-bubble 👍/👎. */
     .sheet-overlay {
       position: absolute; inset: 0;
       background: rgba(0,0,0,.42);
@@ -833,6 +898,7 @@
       border-radius: 18px 18px 0 0;
       padding: 18px 20px 20px;
       animation: slideUpModal .28s ease;
+      border-top: 3px solid #b082ff; /* Track AB accent */
     }
     .sheet-handle {
       width: 36px; height: 4px; border-radius: 2px;
@@ -840,7 +906,11 @@
       margin: 0 auto 14px;
     }
     .sheet-q { font-size: 16px; font-weight: 700; color: var(--text); text-align: center; margin-bottom: 4px; }
-    .sheet-sub { font-size: 12px; color: var(--text-muted); text-align: center; margin-bottom: 16px; }
+    .sheet-sub {
+      font-size: 11px; font-weight: 600; color: #783cc8;
+      text-transform: uppercase; letter-spacing: .5px;
+      text-align: center; margin-bottom: 16px;
+    }
     .sheet-opts { display: flex; flex-direction: column; gap: 8px; }
     .sheet-opt {
       width: 100%; padding: 13px 16px;
@@ -848,10 +918,15 @@
       border-radius: 10px; background: white;
       font-size: 14px; color: var(--text);
       text-align: center; cursor: pointer;
-      transition: background .15s, border-color .15s;
+      transition: background .15s, border-color .15s, color .15s;
       font-family: inherit;
     }
-    .sheet-opt:active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+    .sheet-opt:hover  { border-color: #c0a0ff; }
+    .sheet-opt:active {
+      background: rgba(176,130,255,.12);
+      border-color: #b082ff;
+      color: #783cc8;
+    }
 
     .typing-indicator { display: flex; align-items: flex-start; gap: 8px; }
     .typing-dots {
@@ -1338,15 +1413,334 @@
       z-index: 10;
     }
 
+    /* ── Login / account-picker screen (light theme) ────── */
+    .login-bg {
+      flex: 1; min-height: 0; overflow-y: auto;
+      background: #fafafa;
+      padding: 28px 20px 24px;
+      color: var(--text);
+    }
+    .login-brand {
+      text-align: center; margin-bottom: 20px;
+    }
+    .login-brand-logo {
+      width: 58px; height: 58px; border-radius: 16px;
+      background: linear-gradient(135deg, #fe2c55, #a18cd1);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      margin-bottom: 10px;
+      box-shadow: 0 10px 28px rgba(254,44,85,.22);
+    }
+    .login-brand-title { font-size: 19px; font-weight: 700; color: var(--text); letter-spacing: -.2px; }
+    .login-brand-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+    .login-section-title {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--text-muted);
+      margin: 22px 2px 10px;
+    }
+    .user-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 14px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color .15s, transform .15s, box-shadow .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .user-card:active { transform: scale(.98); }
+    .user-card:hover  { border-color: #d0d0d4; box-shadow: 0 3px 12px rgba(0,0,0,.05); }
+    .user-card-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: #f2f2f5;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; flex-shrink: 0;
+      position: relative;
+    }
+    .user-card-avatar::after {
+      content: '';
+      position: absolute; inset: -2px;
+      border: 2px solid var(--tint-color, transparent);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .user-card-info { flex: 1; min-width: 0; }
+    .user-card-row1 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .user-card-name { font-size: 15px; font-weight: 700; color: var(--text); }
+    .user-card-handle { font-size: 11px; color: var(--text-muted); }
+    .user-card-level {
+      font-size: 10px; font-weight: 700; letter-spacing: .4px;
+      padding: 2px 7px; border-radius: 100px;
+      background: rgba(0,0,0,.06); color: var(--text-secondary);
+    }
+    .user-card-level.premium {
+      background: linear-gradient(135deg, rgba(254,44,85,.16), rgba(176,130,255,.16));
+      color: var(--primary);
+    }
+    .user-card-bio {
+      font-size: 12px; color: var(--text-secondary); margin-top: 3px;
+      line-height: 1.4;
+    }
+    .user-card-stats {
+      font-size: 10px; color: var(--text-muted); margin-top: 4px;
+    }
+    .user-card-arrow {
+      color: #c7c7cc; font-size: 18px; flex-shrink: 0;
+    }
+
+    .login-footer-note {
+      text-align: center; font-size: 11px; color: var(--text-muted);
+      margin-top: 16px; line-height: 1.55;
+    }
+
+    /* Archetype pill shown on end-stream page (tiny personalization) */
+    .archetype-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 100px;
+      margin-top: 6px;
+    }
+
+    /* Repeat-offender warning banner on inbox */
+    .inbox-archetype-warning {
+      margin: 14px 16px 4px;
+      background: linear-gradient(135deg, rgba(255,149,0,.12), rgba(255,59,48,.08));
+      border: 1px solid rgba(255,149,0,.3);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px; color: #8a5200;
+      display: none;
+      line-height: 1.45;
+    }
+    .inbox-archetype-warning.visible { display: block; }
+    .inbox-archetype-warning strong { color: #c56400; }
+
+    /* Demo-only control bar (outside the phone frame so it's clearly dev-surface) */
+    .demo-controls {
+      display: inline-flex; align-items: center; gap: 12px;
+      margin-top: 14px;
+      padding: 8px 14px;
+      background: rgba(0,0,0,.65);
+      border-radius: 100px;
+      color: #fff;
+      font-size: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.18);
+    }
+    .demo-controls-label {
+      font-weight: 700; letter-spacing: .3px;
+      opacity: .8;
+    }
+    .demo-controls select {
+      background: rgba(255,255,255,.14);
+      color: #fff; border: 1px solid rgba(255,255,255,.22);
+      border-radius: 100px; padding: 3px 8px;
+      font: inherit; cursor: pointer; outline: none;
+    }
+    .demo-controls .demo-tier-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 100px;
+      background: rgba(120,200,130,.22);
+      color: #a6f0b7;
+    }
+    .demo-controls .demo-tier-badge.premium {
+      background: rgba(254,44,85,.22);
+      color: #ff8aa3;
+    }
+    .wrap {
+      display: flex; flex-direction: column; align-items: center; gap: 0;
+    }
+
+    /* ── Evidence submission modal (task 1.4 · high-threshold 2nd look) ─────
+       Reuses the appeal-modal overlay pattern but with a clearly distinct
+       visual (indigo accent, not the civic red/blue of agreement feedback). */
+    .evidence-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.5);
+      display: none; z-index: 210;
+      align-items: flex-end; justify-content: center;
+    }
+    .evidence-overlay.active { display: flex; }
+    .evidence-modal {
+      width: 100%;
+      background: #f7f7f7;
+      border-radius: 20px 20px 0 0;
+      padding: 18px 20px 22px;
+      max-height: 90%;
+      overflow-y: auto;
+      animation: slideUpModal .3s ease;
+      border-top: 3px solid #783cc8;
+    }
+    .evidence-title { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .evidence-sub {
+      font-size: 11px; font-weight: 600;
+      color: #783cc8; text-transform: uppercase; letter-spacing: .4px;
+      margin-bottom: 12px;
+    }
+    .evidence-field { margin-bottom: 12px; }
+    .evidence-field-label {
+      font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      margin-bottom: 4px; display: block;
+    }
+    .evidence-field input, .evidence-field textarea {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: 8px;
+      font: inherit; font-size: 13px; color: var(--text);
+      background: white; outline: none;
+      transition: border-color .15s;
+    }
+    .evidence-field input:focus, .evidence-field textarea:focus { border-color: #b082ff; }
+    .evidence-field textarea { min-height: 80px; resize: vertical; }
+    .evidence-helper {
+      font-size: 11px; color: var(--text-muted); margin-top: 4px;
+    }
+    .evidence-helper.err { color: var(--primary); }
+    .evidence-disclaimer {
+      background: #f0eaff; border-radius: 8px;
+      padding: 10px 12px; font-size: 11px; line-height: 1.5;
+      color: #5c3890; margin-bottom: 14px;
+    }
+    .evidence-btn-row { display: flex; gap: 8px; }
+    .evidence-btn {
+      flex: 1; height: 44px;
+      border: none; border-radius: 10px;
+      font: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer;
+    }
+    .evidence-btn.primary  { background: #783cc8; color: white; }
+    .evidence-btn.primary:disabled { background: #c8c8d0; color: #888; cursor: not-allowed; }
+    .evidence-btn.primary:not(:disabled):active { background: #5c3890; }
+    .evidence-btn.secondary {
+      background: white; color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* Premium human-agent UI (G8-G11 only) */
+    .premium-banner {
+      margin: 8px 16px 0;
+      background: linear-gradient(135deg, rgba(254,44,85,.08), rgba(161,140,209,.08));
+      border: 1px solid rgba(254,44,85,.28);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: none;
+      animation: slideUp .35s ease;
+    }
+    .premium-banner.visible { display: flex; align-items: center; gap: 10px; }
+    .premium-banner-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #fe2c55, #a18cd1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: white; flex-shrink: 0;
+    }
+    .premium-banner-body { flex: 1; min-width: 0; }
+    .premium-banner-title {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      line-height: 1.3;
+    }
+    .premium-banner-desc {
+      font-size: 11px; color: var(--text-muted);
+      margin-top: 2px; line-height: 1.4;
+    }
+    .premium-banner-btn {
+      padding: 7px 12px;
+      background: var(--primary); color: white;
+      border: none; border-radius: 100px;
+      font-size: 12px; font-weight: 600;
+      cursor: pointer; flex-shrink: 0;
+      font-family: inherit;
+    }
+    .premium-banner-btn:active { background: var(--primary-dark); }
+
+    /* Human agent queue modal */
+    .human-queue-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.55);
+      display: none; z-index: 220;
+      align-items: center; justify-content: center;
+      padding: 0 24px;
+    }
+    .human-queue-overlay.active { display: flex; }
+    .human-queue-card {
+      width: 100%; max-width: 320px;
+      background: white; border-radius: 16px;
+      padding: 24px 22px; text-align: center;
+      animation: slideUp .3s ease;
+    }
+    .human-queue-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      margin: 0 auto 14px;
+      background: linear-gradient(135deg, #fe2c55, #a18cd1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; color: white;
+      box-shadow: 0 6px 18px rgba(254,44,85,.32);
+      animation: humanPulse 1.6s infinite;
+    }
+    @keyframes humanPulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.05); }
+    }
+    .human-queue-title {
+      font-size: 17px; font-weight: 700; color: var(--text);
+      margin-bottom: 6px;
+    }
+    .human-queue-sub {
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.5; margin-bottom: 16px;
+    }
+    .human-queue-stats {
+      display: flex; gap: 14px;
+      justify-content: center; margin-bottom: 18px;
+    }
+    .human-queue-stat {
+      flex: 1; background: #f5f5f5;
+      border-radius: 10px; padding: 10px 8px;
+    }
+    .human-queue-stat .k {
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .4px;
+      margin-bottom: 2px;
+    }
+    .human-queue-stat .v {
+      font-size: 18px; font-weight: 700; color: var(--primary);
+    }
+    .human-queue-btn {
+      width: 100%; padding: 12px;
+      background: var(--primary); color: white;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer;
+    }
+    .human-queue-btn.secondary {
+      background: transparent; color: var(--text-secondary);
+      border: 1px solid var(--border); margin-top: 8px;
+    }
+
+    /* Premium tag in chat topbar */
+    .chat-topbar-level {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 100px;
+      background: rgba(0,0,0,.07); color: var(--text-secondary);
+      margin-left: 6px;
+    }
+    .chat-topbar-level.premium {
+      background: linear-gradient(135deg, rgba(254,44,85,.18), rgba(161,140,209,.18));
+      color: var(--primary);
+    }
+
     /* Responsive */
     @media (max-width: 430px) {
       body { padding: 0; background: white; }
       .phone { width: 100%; height: 100vh; max-height: 100vh; border-radius: 0; box-shadow: none; }
       .phone::before { display: none; }
+      .demo-controls { display: none; } /* hide dev-surface on small screens */
     }
   </style>
 </head>
 <body>
+
+<div class="wrap">
 
 <div class="phone">
 
@@ -1374,6 +1768,25 @@
   </div>
 
   <!-- ═══════════════════════════════
+       SCREEN: Login / account picker
+  ═══════════════════════════════ -->
+  <div class="app-screen" id="screen-login">
+    <div class="login-bg">
+      <div class="login-brand">
+        <div class="login-brand-logo">🎬</div>
+        <div class="login-brand-title">TikTok LIVE · Creator Center</div>
+        <div class="login-brand-sub">AI Insight for Violation Education — demo accounts</div>
+      </div>
+      <div class="login-section-title">Pick a demo account to sign in</div>
+      <div id="user-card-list"></div>
+      <div class="login-footer-note">
+        Each account seeds a different creator archetype — same backend, different UX journey.<br>
+        This is a demo; no real authentication.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
        SCREEN: System Notifications
   ═══════════════════════════════ -->
   <div class="app-screen" id="screen-notifications" style="background:#f0f5f0;">
@@ -1394,16 +1807,17 @@
   <!-- ═══════════════════════════════
        SCREEN 0: 关播页 (End Stream Page)
   ═══════════════════════════════ -->
-  <div class="app-screen active" id="screen-end-stream" style="background:#f5f5f5;">
+  <div class="app-screen" id="screen-end-stream" style="background:#f5f5f5;">
     <div class="end-stream-scroll" id="end-stream-scroll">
       <div class="end-stream-header-row" id="end-stream-header">
-        <div class="end-stream-close">×</div>
+        <div class="end-stream-close" onclick="logoutToLogin()" title="Switch account">×</div>
         <div class="end-stream-live-center">◆ LIVE Center</div>
       </div>
       <div style="padding: 4px 20px 0;">
         <div class="end-stream-duration">Duration: 5s</div>
-        <div class="end-stream-congrats">Congratulations!</div>
-        <div class="end-stream-subtitle">You're doing great. Keep up the good work!</div>
+        <div class="end-stream-congrats" id="es-greeting-primary">Congratulations!</div>
+        <div class="end-stream-subtitle" id="es-greeting-secondary">You're doing great. Keep up the good work!</div>
+        <span class="archetype-pill" id="es-archetype-pill" style="display:none;"></span>
       </div>
 
       <!-- Stats -->
@@ -1559,6 +1973,8 @@
       <div class="inbox-tab active" id="tab-active" onclick="switchTab('active')">Active (<span id="active-count">3</span>)</div>
       <div class="inbox-tab" id="tab-history" onclick="switchTab('history')">History (<span id="history-count">3</span>)</div>
     </div>
+    <!-- Archetype-driven warning banner (repeat offender, appealer etc.) -->
+    <div class="inbox-archetype-warning" id="inbox-archetype-warning"></div>
     <div class="inbox-list" id="inbox-list"></div>
   </div>
 
@@ -1618,7 +2034,18 @@
         </div>
       </div>
 
-      <!-- LIVE details -->
+      <!-- Proactive AI Stream (moved above LIVE details per §2.1 / task 1.3) -->
+      <div class="ai-stream-section" id="detail-ai-stream" style="display:none;">
+        <div class="ai-stream-header">
+          <div class="agent-avatar" style="width:24px;height:24px;font-size:11px;">🤖</div>
+          <span style="font-size:13px;font-weight:600;color:var(--text);">AI Insight</span>
+        </div>
+        <div class="ai-stream-body" id="detail-ai-stream-body"></div>
+        <!-- Inline options after stream (for proactive AI pages) -->
+        <div class="ai-stream-options" id="detail-ai-options" style="display:none;margin-top:12px;"></div>
+      </div>
+
+      <!-- LIVE details (now below AI Insight) -->
       <div class="detail-section">
         <div class="detail-section-title">LIVE details</div>
         <div class="detail-live-card">
@@ -1632,24 +2059,17 @@
         </div>
       </div>
 
-      <!-- Proactive AI Stream -->
-      <div class="ai-stream-section" id="detail-ai-stream" style="display:none;">
-        <div class="ai-stream-header">
-          <div class="agent-avatar" style="width:24px;height:24px;font-size:11px;">🤖</div>
-          <span style="font-size:13px;font-weight:600;color:var(--text);">AI Insight</span>
-        </div>
-        <div class="ai-stream-body" id="detail-ai-stream-body"></div>
-        <!-- Inline options after stream (for proactive AI pages) -->
-        <div class="ai-stream-options" id="detail-ai-options" style="display:none;margin-top:12px;"></div>
-      </div>
-
-      <!-- Feedback (always at bottom) -->
-      <div class="detail-feedback" id="detail-feedback-section">
-        <div class="feedback-label">Feedback</div>
-        <div class="feedback-desc" id="detail-feedback-q"></div>
-        <div class="feedback-btns">
-          <button class="feedback-btn" onclick="selectFeedback(this,'yes')">👍 Yes</button>
-          <button class="feedback-btn" onclick="selectFeedback(this,'no')">👎 No</button>
+      <!-- Restriction-agreement feedback · Track C civic palette (PRD §2.1 · task 1.1) -->
+      <div class="detail-agreement" id="detail-feedback-section">
+        <div class="detail-agreement-label">Do you agree with this restriction?</div>
+        <div class="detail-agreement-desc" id="detail-feedback-q"></div>
+        <div class="detail-agreement-btns feedback-btns">
+          <button class="detail-agreement-btn feedback-btn agree"    onclick="selectRestrictionFeedback(this,'agree')">
+            <span class="detail-agreement-icon">✓</span>Makes sense to me
+          </button>
+          <button class="detail-agreement-btn feedback-btn disagree" onclick="selectRestrictionFeedback(this,'disagree')">
+            <span class="detail-agreement-icon">⚠︎</span>Doesn't match
+          </button>
         </div>
       </div>
     </div>
@@ -1689,11 +2109,6 @@
         <div class="detail-section-date" id="appeal-restriction-date"></div>
       </div>
 
-      <div class="detail-section">
-        <div class="detail-section-title">Restriction details</div>
-        <div class="detail-section-text" id="appeal-restriction-desc"></div>
-      </div>
-
       <!-- Video clip passthrough -->
       <div class="detail-video-section" id="appeal-video-section">
         <div class="detail-section-title" style="padding:0 0 8px;">Violation clip</div>
@@ -1710,7 +2125,7 @@
         </div>
       </div>
 
-      <!-- Proactive AI Stream -->
+      <!-- Proactive AI Stream (rises above Restriction details per task 1.3) -->
       <div class="ai-stream-section" id="appeal-ai-stream" style="display:none;">
         <div class="ai-stream-header">
           <div class="agent-avatar" style="width:24px;height:24px;font-size:11px;">🤖</div>
@@ -1720,13 +2135,23 @@
         <div class="ai-stream-options" id="appeal-ai-options" style="display:none;margin-top:12px;"></div>
       </div>
 
-      <!-- Feedback (always at bottom) -->
-      <div class="detail-section" id="appeal-feedback-section">
-        <div class="feedback-label">Feedback</div>
-        <div class="feedback-desc" id="appeal-feedback-q"></div>
-        <div class="feedback-btns">
-          <button class="feedback-btn" onclick="selectFeedback(this,'yes')">Yes</button>
-          <button class="feedback-btn" onclick="selectFeedback(this,'no')">No</button>
+      <!-- Restriction details now sit below AI Insight -->
+      <div class="detail-section">
+        <div class="detail-section-title">Restriction details</div>
+        <div class="detail-section-text" id="appeal-restriction-desc"></div>
+      </div>
+
+      <!-- Restriction-agreement feedback · Track C civic palette -->
+      <div class="detail-agreement" id="appeal-feedback-section">
+        <div class="detail-agreement-label">Do you agree with this restriction?</div>
+        <div class="detail-agreement-desc" id="appeal-feedback-q"></div>
+        <div class="detail-agreement-btns feedback-btns">
+          <button class="detail-agreement-btn feedback-btn agree"    onclick="selectRestrictionFeedback(this,'agree')">
+            <span class="detail-agreement-icon">✓</span>Makes sense to me
+          </button>
+          <button class="detail-agreement-btn feedback-btn disagree" onclick="selectRestrictionFeedback(this,'disagree')">
+            <span class="detail-agreement-icon">⚠︎</span>Doesn't match
+          </button>
         </div>
       </div>
     </div>
@@ -1747,6 +2172,16 @@
       <div class="back-btn" onclick="closeChat()">‹</div>
       <span class="chat-topbar-title">Ask for Help</span>
       <span class="chat-topbar-badge" id="chat-punish-badge"></span>
+      <span class="chat-topbar-level" id="chat-topbar-level"></span>
+    </div>
+    <!-- PRD-adjacent · G8-G11 premium channel to a human agent (front-end mock only) -->
+    <div class="premium-banner" id="premium-banner">
+      <div class="premium-banner-icon">🧑‍💼</div>
+      <div class="premium-banner-body">
+        <div class="premium-banner-title">You have access to a human agent</div>
+        <div class="premium-banner-desc" id="premium-banner-desc">Premium perk for G8+ creators · avg. wait 2 min</div>
+      </div>
+      <button class="premium-banner-btn" onclick="openHumanQueue()">Connect</button>
     </div>
     <div class="chat-context">
       <div class="chat-context-header" onclick="toggleChatContext()">
@@ -1789,6 +2224,60 @@
       <div class="appeal-banner-title">🔔 You may have grounds for an appeal</div>
       <div class="appeal-banner-desc">It sounds like you believe this enforcement action may have been an error. You can file a formal appeal to have a human specialist review your case.</div>
       <button class="appeal-banner-btn" onclick="openAppealModal()">File an Appeal</button>
+    </div>
+
+    <!-- Evidence submission modal · task 1.4 · high threshold 2nd-look -->
+    <div class="evidence-overlay" id="evidence-overlay" onclick="closeEvidenceModal(event)">
+      <div class="evidence-modal" onclick="event.stopPropagation()">
+        <div class="evidence-title">Submit evidence for a 2nd look</div>
+        <div class="evidence-sub">📎 Priority reviewer · high threshold</div>
+        <div class="evidence-disclaimer">
+          I'll do a quick preliminary check — if your evidence looks substantive, I'll flag this for priority reviewer attention. I <strong>won't</strong> overturn the flag myself; the final decision is always a human reviewer's. Response within 24 h.
+        </div>
+        <div class="evidence-field">
+          <label class="evidence-field-label">Timestamp in your LIVE</label>
+          <input type="text" id="evidence-timestamp" placeholder="HH:MM:SS–HH:MM:SS" />
+        </div>
+        <div class="evidence-field">
+          <label class="evidence-field-label">What actually happened? <span style="color:var(--text-muted);font-weight:400;">(required · min 20 chars)</span></label>
+          <textarea id="evidence-context" placeholder="Describe the context the system may have missed — e.g. your intent, the creative setup, the cultural reference…" oninput="updateEvidenceSubmitBtn()"></textarea>
+          <div class="evidence-helper" id="evidence-helper">0 / 500</div>
+        </div>
+        <div class="evidence-field">
+          <label class="evidence-field-label">Optional screenshot</label>
+          <input type="file" accept="image/*" />
+          <div class="evidence-helper">Not stored in demo · only metadata is recorded</div>
+        </div>
+        <div class="evidence-btn-row">
+          <button class="evidence-btn secondary" onclick="closeEvidenceModal()">Cancel</button>
+          <button class="evidence-btn primary" id="evidence-submit-btn" disabled onclick="submitEvidence()">Submit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- G8-G11 premium human-agent queue (frontend mock) -->
+    <div class="human-queue-overlay" id="human-queue-overlay">
+      <div class="human-queue-card">
+        <div class="human-queue-avatar">🧑‍💼</div>
+        <div class="human-queue-title" id="human-queue-title">Connecting you to a premium agent</div>
+        <div class="human-queue-sub" id="human-queue-sub">We prioritize G8+ creators. Your AI chat stays open while you wait.</div>
+        <div class="human-queue-stats">
+          <div class="human-queue-stat">
+            <div class="k">Position</div>
+            <div class="v" id="human-queue-pos">#3</div>
+          </div>
+          <div class="human-queue-stat">
+            <div class="k">Est. wait</div>
+            <div class="v" id="human-queue-eta">2 min</div>
+          </div>
+          <div class="human-queue-stat">
+            <div class="k">Tier</div>
+            <div class="v" id="human-queue-tier">G9</div>
+          </div>
+        </div>
+        <button class="human-queue-btn" onclick="closeHumanQueue()">Got it · keep chatting with AI</button>
+        <button class="human-queue-btn secondary" onclick="cancelHumanQueue()">Leave the queue</button>
+      </div>
     </div>
 
     <!-- PRD §2.1 Scenario 4: session-level feedback bottom sheet -->
@@ -1856,6 +2345,19 @@
   </div>
 
 </div><!-- /phone -->
+
+<!-- Demo-only control bar (dev surface — not real product UX) -->
+<div class="demo-controls">
+  <span class="demo-controls-label">🎛 DEMO</span>
+  <span id="demo-user-pill" style="display:inline-flex;align-items:center;gap:6px;">
+    <span id="demo-user-avatar" style="font-size:16px;">—</span>
+    <span id="demo-user-name">Not signed in</span>
+  </span>
+  <span class="demo-tier-badge" id="demo-tier-badge">—</span>
+  <button onclick="logoutToLogin()" style="background:rgba(255,255,255,.14);color:white;border:1px solid rgba(255,255,255,.22);border-radius:100px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit;">Switch account</button>
+</div>
+
+</div><!-- /wrap -->
 
 <script>
 // ═══════════════════════════════════
@@ -2507,15 +3009,40 @@ function openHistoryDetail(histIdx) {
   document.getElementById('screen-appeal-detail').classList.add('active');
 }
 
+// PRD §2.1 Scenario 4 + task 1.2 · auto-derive Layer-2 from Layer-1 when signal is strong.
+// High-confidence same-direction majority → log the inferred answer, skip the sheet.
+// Mixed / insufficient signal → still prompt.
+function deriveLayer2FromLayer1() {
+  const total = (layer1Counts.up || 0) + (layer1Counts.down || 0);
+  if (total < 3) return null;                       // not enough signal
+  const pctUp = layer1Counts.up / total;
+  if (pctUp >= 0.75) return { choice: 'helpful',   confidence: 'high', source: 'auto_layer1' };
+  if (pctUp <= 0.25) return { choice: 'unhelpful', confidence: 'high', source: 'auto_layer1' };
+  return null;                                      // mixed → fall through
+}
+
 function closeChat() {
-  // PRD §2.1 Scenario 4: if ≥2 turns and Layer-1 feedback is sparse → ask Layer-2 question
-  const sameDirectionFeedback = Math.max(layer1Counts.up, layer1Counts.down);
-  const shouldAskSession = chatTurnCount >= 2 && sameDirectionFeedback < 3 && !sessionFeedbackGiven;
-  if (shouldAskSession) {
-    document.getElementById('session-feedback-sheet').classList.add('active');
-    return;
+  if (chatTurnCount < 2 || sessionFeedbackGiven) {
+    return finalizeCloseChat();
   }
-  finalizeCloseChat();
+  // Try auto-derivation first (task 1.2)
+  const auto = deriveLayer2FromLayer1();
+  if (auto) {
+    sessionFeedbackGiven = true;
+    beacon('POST', `/api/sessions/${encodeURIComponent(currentItem ? currentItem.ai_session_id : 'unknown')}/feedback`, {
+      choice:         auto.choice,
+      auto_derived:   true,
+      confidence:     auto.confidence,
+      source:         auto.source,
+      violation_id:   currentItem && currentItem.violation_id,
+      turnCount:      chatTurnCount,
+      layer1:         layer1Counts,
+    });
+    showToast(`Layer 2 · auto-derived · ${auto.choice}`);
+    return finalizeCloseChat();
+  }
+  // No strong signal → show the sheet (manual Layer-2 picker)
+  document.getElementById('session-feedback-sheet').classList.add('active');
 }
 
 function completeSessionFeedback(choice) {
@@ -2596,6 +3123,7 @@ function populateInbox(sc) {
   document.getElementById('history-count').textContent = HISTORY_ITEMS.length;
   document.getElementById('tab-active').classList.add('active');
   document.getElementById('tab-history').classList.remove('active');
+  refreshInboxArchetypeWarning();
 
   // PRD §2.2 — group items by live_session_id; preserve order of first appearance
   const groups = [];
@@ -2860,10 +3388,33 @@ function streamAIResponse(container, text, optionsContainer, openChatFn, learnin
   }, 300);
 }
 
-// PRD §2.1: 4 intents, all visually equal (no dark-pattern lowlight) + pick-once 200ms fade
+// PRD §2.1: 4 intents, all visually equal (no dark-pattern lowlight) + pick-once 200ms fade.
+// When the violation already has a persisted conversation, collapse to a single
+// "Keep conversation" CTA (PRD §3.4 persistent conversation_id continuity).
 function showStreamOptions(container, openChatFn, learningOnly) {
   container.style.display = 'flex';
   container.innerHTML = '';
+
+  // Does this violation already have a prior chat on record for the signed-in creator?
+  const hasPriorConversation = (() => {
+    if (!currentItem) return false;
+    const sess = loadAISession(currentItem.ai_session_id);
+    const msgs = sess.messagesByViolation[currentItem.violation_id];
+    return !!(msgs && msgs.length > 0);
+  })();
+
+  if (hasPriorConversation) {
+    const btn = document.createElement('button');
+    btn.className = 'ai-stream-opt-btn';
+    btn.textContent = '🗨️ Keep conversation';
+    btn.onclick = () => {
+      btn.classList.add('picked');
+      setTimeout(() => openChatFn(), 220); // no preselected intent → restore prior messages
+    };
+    container.appendChild(btn);
+    return;
+  }
+
   const opts = [
     { key: 'understand', label: '💡 Why was my LIVE flagged?' },
     { key: 'improve',    label: '📚 How do I avoid this next time?' },
@@ -2994,6 +3545,22 @@ function selectFeedback(btn, choice) {
   btn.classList.add('selected');
 }
 
+// Track C — restriction-agreement feedback (civic palette, distinct from chat thumbs).
+// Emits a `feedback.restriction` beacon (not `feedback.layer1`) so backend metrics can
+// separate "do you agree with the enforcement?" from "was the AI chat useful?".
+function selectRestrictionFeedback(btn, choice) {
+  const btns = btn.parentElement.querySelectorAll('.detail-agreement-btn');
+  btns.forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  beacon('POST', '/api/messages/feedback', {
+    surface: 'restriction',
+    choice,                                         // 'agree' | 'disagree'
+    violation_id:  currentItem && currentItem.violation_id,
+    ai_session_id: currentItem && currentItem.ai_session_id,
+  });
+  showToast(choice === 'agree' ? 'Logged · you agree this is reasonable' : 'Logged · you disagree — reviewer sees this');
+}
+
 // ═══════════════════════════════════
 //  AI CHAT — intent-driven, mode-aware
 // ═══════════════════════════════════
@@ -3011,6 +3578,295 @@ let sessionFeedbackGiven = false;               // Layer-2 sheet only triggered 
 let pendingChatIntent = null;                   // intent picked on Violation Page → opens chat with it preselected
 
 // ───────────────────────────────────────────────────────────────
+// Account archetypes · each drives a distinct demo journey
+// ───────────────────────────────────────────────────────────────
+const USER_PROFILES = [
+  {
+    id: 'u_sarah', name: 'Rookie Sarah · 1st-ever flag', firstName: 'Sarah', handle: '@sarah.firstlive',
+    avatar: '🌱', tint: '#34c759',
+    level: 2, levelLabel: 'G2',
+    followers: '312', totalLives: 3,
+    archetype: 'rookie',
+    bio: 'First flag ever · needs onboarding-tone education',
+    greeting: { primary: 'Nice work, Sarah!', secondary: 'Your 3rd LIVE — getting the hang of it.' },
+    archetypePill: { text: '🌱 New creator · welcome pack', color: '#34c759', bg: 'rgba(52,199,89,.12)' },
+    priorViolations: 0,
+    appealHistory: { filed: 0, approved: 0, rejected: 0 },
+  },
+  {
+    id: 'u_jay', name: 'Baseline Jay · standard flow', firstName: 'Jay', handle: '@jay.baseline',
+    avatar: '🎤', tint: '#007aff',
+    level: 5, levelLabel: 'G5',
+    followers: '12.3K', totalLives: 84,
+    archetype: 'regular',
+    bio: 'Baseline creator · the reference UX journey',
+    greeting: { primary: 'Hey Jay 👋', secondary: 'Great LIVE — a few things to review.' },
+    archetypePill: null,
+    priorViolations: 1,
+    appealHistory: { filed: 0, approved: 0, rejected: 0 },
+  },
+  {
+    id: 'u_mike', name: 'Repeat-flagger Mike · 5 in 30d', firstName: 'Mike', handle: '@mike.repeat.igs',
+    avatar: '🧢', tint: '#ff9500',
+    level: 4, levelLabel: 'G4',
+    followers: '8.7K', totalLives: 120,
+    archetype: 'repeat',
+    bio: 'Repeat offender · 4 IGS flags in last 30 days',
+    greeting: { primary: 'Mike — we need to talk', secondary: '5 Inorganic Gift Solicitation flags this month.' },
+    archetypePill: { text: '⚠️ Pattern detected · 5th flag in 30d', color: '#c56400', bg: 'rgba(255,149,0,.14)' },
+    priorViolations: 4,
+    appealHistory: { filed: 2, approved: 0, rejected: 2 },
+  },
+  {
+    id: 'u_zoe', name: 'VIP Zoe · G10 top-tier', firstName: 'Zoe', handle: '@zoe.vip',
+    avatar: '💎', tint: '#fe2c55',
+    level: 10, levelLabel: 'G10 ⭐',
+    followers: '1.2M', totalLives: 412,
+    archetype: 'premium',
+    bio: 'Top-tier creator · human agent always available',
+    greeting: { primary: 'Welcome back, Zoe ⭐', secondary: 'Evening Stream reached 148K concurrent.' },
+    archetypePill: { text: '⭐ Top creator · priority support', color: '#fe2c55', bg: 'rgba(254,44,85,.12)' },
+    priorViolations: 0,
+    appealHistory: { filed: 0, approved: 0, rejected: 0 },
+  },
+  {
+    id: 'u_alex', name: 'Serial-appealer Alex · 3 appeals', firstName: 'Alex', handle: '@alex.appeal.heavy',
+    avatar: '⚖️', tint: '#b082ff',
+    level: 7, levelLabel: 'G7',
+    followers: '45.2K', totalLives: 203,
+    archetype: 'appealer',
+    bio: 'High-appeal creator · 3 prior appeals (1 approved)',
+    greeting: { primary: 'Hi Alex', secondary: 'We resolved your 4/5 appeal — reach restored.' },
+    archetypePill: { text: '⚖️ Appeal history · 3 filed · 1 approved', color: '#8058c8', bg: 'rgba(176,130,255,.14)' },
+    priorViolations: 3,
+    appealHistory: { filed: 3, approved: 1, rejected: 2 },
+  },
+];
+
+let currentUser = null;
+let currentUserLevel = 5;  // derived from currentUser.level; kept for code that already reads this
+
+function isPremiumLevel(level) { return (level || currentUserLevel) >= 8; }
+
+function setCurrentUser(profile) {
+  currentUser = profile;
+  currentUserLevel = profile.level;
+  try { localStorage.setItem('aiInsight.currentUser', profile.id); } catch (_) {}
+  // Demo control bar
+  document.getElementById('demo-user-avatar').textContent = profile.avatar;
+  document.getElementById('demo-user-name').textContent   = `${profile.name} · ${profile.levelLabel}`;
+  const badge = document.getElementById('demo-tier-badge');
+  const premium = isPremiumLevel();
+  badge.textContent = premium ? 'Premium · Human support' : profile.archetype.charAt(0).toUpperCase() + profile.archetype.slice(1);
+  badge.classList.toggle('premium', premium);
+  // In-app greeting on end-stream
+  const congrats = document.getElementById('es-greeting-primary');
+  const subtitle = document.getElementById('es-greeting-secondary');
+  const pill     = document.getElementById('es-archetype-pill');
+  if (congrats) congrats.textContent = profile.greeting.primary;
+  if (subtitle) subtitle.textContent = profile.greeting.secondary;
+  if (pill) {
+    if (profile.archetypePill) {
+      pill.textContent = profile.archetypePill.text;
+      pill.style.color = profile.archetypePill.color;
+      pill.style.background = profile.archetypePill.bg;
+      pill.style.display = 'inline-flex';
+    } else {
+      pill.style.display = 'none';
+    }
+  }
+  // Inbox archetype warning (shown only when relevant)
+  refreshInboxArchetypeWarning();
+  // Premium chrome in chat reflects the new tier
+  if (document.getElementById('screen-chat').classList.contains('active')) {
+    refreshPremiumChrome();
+  }
+}
+
+function refreshInboxArchetypeWarning() {
+  const el = document.getElementById('inbox-archetype-warning');
+  if (!el || !currentUser) return;
+  const a = currentUser.archetype;
+  if (a === 'repeat') {
+    el.innerHTML = `<strong>⚠️ Your 5th Inorganic Gift Solicitation flag in the last 30 days.</strong><br>
+                    AI Insight will reference your earlier violations so we can find the root cause together.`;
+    el.classList.add('visible');
+  } else if (a === 'appealer') {
+    el.innerHTML = `<strong>⚖️ Appeal history · 3 filed · 1 approved.</strong><br>
+                    Review the AI explanation first — if it still doesn't match, appeal is one tap away.`;
+    el.classList.add('visible');
+  } else {
+    el.classList.remove('visible');
+  }
+}
+
+function renderLoginCards() {
+  const root = document.getElementById('user-card-list');
+  if (!root) return;
+  root.innerHTML = USER_PROFILES.map(p => {
+    const premium = p.level >= 8;
+    return `
+      <div class="user-card" onclick="loginAs('${p.id}')" style="--tint-color:${p.tint};">
+        <div class="user-card-avatar" style="background:${p.tint}22;">${p.avatar}</div>
+        <div class="user-card-info">
+          <div class="user-card-row1">
+            <span class="user-card-name">${p.name}</span>
+            <span class="user-card-handle">${p.handle}</span>
+            <span class="user-card-level${premium ? ' premium' : ''}">${p.levelLabel}</span>
+          </div>
+          <div class="user-card-bio">${p.bio}</div>
+          <div class="user-card-stats">${p.followers} followers · ${p.totalLives} LIVEs · ${p.priorViolations} prior violations</div>
+        </div>
+        <div class="user-card-arrow">›</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function loginAs(userId) {
+  const profile = USER_PROFILES.find(u => u.id === userId);
+  if (!profile) return;
+  setCurrentUser(profile);
+  goToEndStream();
+  showToast(`Signed in as ${profile.name}`);
+}
+
+function logoutToLogin() {
+  currentUser = null;
+  try { localStorage.removeItem('aiInsight.currentUser'); } catch (_) {}
+  renderLoginCards();
+  hideAll();
+  setStatusBar('dark');
+  document.getElementById('screen-login').classList.add('active');
+  // Reset any chat state
+  try { document.getElementById('chat-messages').innerHTML = ''; } catch (_) {}
+}
+
+// Legacy function kept as a noop alias so older inline handlers still work.
+function setUserLevel() { /* user level now comes from the signed-in profile */ }
+
+function refreshPremiumChrome() {
+  const premium = isPremiumLevel();
+  const banner = document.getElementById('premium-banner');
+  banner.classList.toggle('visible', premium);
+  const pill = document.getElementById('chat-topbar-level');
+  pill.textContent = 'G' + currentUserLevel;
+  pill.classList.toggle('premium', premium);
+}
+
+// ───────────────────────────────────────────────────────────────
+// Human agent queue (G8-G11 mock). No real routing — just demo UI.
+// ───────────────────────────────────────────────────────────────
+function openHumanQueue() {
+  // Fake but plausible queue position + ETA based on tier — higher tier = shorter wait.
+  const tierBoost = Math.max(0, currentUserLevel - 7);  // G8→1, G9→2, ...
+  const position  = Math.max(1, 5 - tierBoost + Math.floor(Math.random() * 2));
+  const etaMin    = Math.max(1, 4 - tierBoost);
+  document.getElementById('human-queue-pos').textContent = '#' + position;
+  document.getElementById('human-queue-eta').textContent = etaMin + ' min';
+  document.getElementById('human-queue-tier').textContent = 'G' + currentUserLevel;
+  document.getElementById('human-queue-overlay').classList.add('active');
+  beacon('POST', `/api/sessions/${encodeURIComponent(currentItem ? currentItem.ai_session_id : 'unknown')}/messages`, {
+    role: 'system', text: `Queued for human agent · tier G${currentUserLevel} · position #${position} · eta ${etaMin}m`,
+    violation_id: currentItem && currentItem.violation_id,
+    user_level: currentUserLevel,
+    event: 'human_agent_queued',
+  });
+  showToast(`Queued for human agent · position #${position}`);
+}
+function closeHumanQueue()  { document.getElementById('human-queue-overlay').classList.remove('active'); }
+function cancelHumanQueue() {
+  document.getElementById('human-queue-overlay').classList.remove('active');
+  showToast('Left the queue');
+}
+
+// ───────────────────────────────────────────────────────────────
+// Evidence submission (task 1.4) · high-threshold 2nd-look channel.
+// AI never says "you were right" — it only flags substantive submissions
+// for priority reviewer attention. Threshold set server-side (default 0.85).
+// ───────────────────────────────────────────────────────────────
+let evidenceSubmittedPerViolation = {};  // violation_id → true (prevents spam)
+
+function triggerEvidenceSubmission() {
+  const vid = currentItem && currentItem.violation_id;
+  if (vid && evidenceSubmittedPerViolation[vid]) {
+    showToast('You\'ve already submitted evidence for this flag');
+    return;
+  }
+  const overlay = document.getElementById('evidence-overlay');
+  document.getElementById('evidence-timestamp').value = (currentDetail && currentDetail.videoTs) || '';
+  document.getElementById('evidence-context').value   = '';
+  document.getElementById('evidence-helper').textContent = '0 / 500';
+  document.getElementById('evidence-helper').classList.remove('err');
+  document.getElementById('evidence-submit-btn').disabled = true;
+  overlay.classList.add('active');
+}
+
+function closeEvidenceModal(e) {
+  if (e && e.target && e.target.id !== 'evidence-overlay') return;
+  document.getElementById('evidence-overlay').classList.remove('active');
+}
+
+function updateEvidenceSubmitBtn() {
+  const ta      = document.getElementById('evidence-context');
+  const helper  = document.getElementById('evidence-helper');
+  const btn     = document.getElementById('evidence-submit-btn');
+  const len     = (ta.value || '').trim().length;
+  helper.textContent = `${len} / 500`;
+  if (len > 500) { helper.textContent += ' · over limit'; helper.classList.add('err'); btn.disabled = true; return; }
+  if (len < 20)  { helper.classList.remove('err'); btn.disabled = true; return; }
+  helper.classList.remove('err');
+  btn.disabled = false;
+}
+
+async function submitEvidence() {
+  const vid     = currentItem && currentItem.violation_id;
+  const ts      = (document.getElementById('evidence-timestamp').value || '').trim();
+  const context = (document.getElementById('evidence-context').value || '').trim();
+  if (context.length < 20) return;
+
+  const btn = document.getElementById('evidence-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  // Beacon the submission; backend runs preliminary AI check + threshold gate.
+  const resp = await beacon('POST', '/api/evidence/submit', {
+    violation_id:   vid,
+    ai_session_id:  currentItem && currentItem.ai_session_id,
+    violation_type: currentItem && currentItem.violation_type,
+    timestamp:      ts,
+    context,
+  });
+
+  // Mark so we can't double-submit for this violation this session
+  if (vid) evidenceSubmittedPerViolation[vid] = true;
+  document.getElementById('evidence-overlay').classList.remove('active');
+  btn.textContent = 'Submit';
+
+  // Surface result in chat — AI response comes from backend (or safe local fallback).
+  let reply, positive = false;
+  if (resp && resp.body && resp.body.preliminary === 'positive') {
+    reply = resp.body.reply || 'This evidence looks substantive. I\'ve tagged it for priority reviewer attention — you\'ll hear back within 24 h.';
+    positive = true;
+  } else if (resp && resp.body && resp.body.preliminary === 'neutral') {
+    reply = resp.body.reply || 'Thanks — I\'ve logged your context with your appeal. The reviewer will weigh it.';
+  } else {
+    // Backend missing / error: use safe neutral fallback (no AI "you were right")
+    reply = 'Thanks — your context is saved. A reviewer will see it with your appeal submission.';
+  }
+  appendUserMessage(`📎 Evidence submitted · ${context.slice(0, 60)}${context.length > 60 ? '…' : ''}`);
+  showTyping();
+  setTimeout(() => {
+    appendAIMessage(reply, () => {
+      setQuickReplies([
+        { label: '↩️ Ask something else', alwaysShow: true, onClick: () => showRootIntents('What else?') },
+        { label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.short) },
+      ]);
+    }, resp && resp.body && resp.body.source === 'claude' ? 'claude' : 'template');
+  }, 500);
+}
+
+// ───────────────────────────────────────────────────────────────
 // PRD §3 · Mock backend beacons + editable-template fetch.
 // No-ops cleanly if the backend is down — demo still works standalone.
 // ───────────────────────────────────────────────────────────────
@@ -3020,10 +3876,20 @@ let aiPausedByOps = false;                 // reflects the server-side killswitc
 
 function beacon(method, path, body) {
   if (!BACKEND_ROOT || !backendHealthy) return Promise.resolve(null);
+  // Auto-attach creator identity so the backend / dashboard can slice by tier + archetype.
+  const enriched = (body && typeof body === 'object')
+    ? {
+        user_id:    (currentUser && currentUser.id)    || 'anon',
+        user_name:  (currentUser && currentUser.name)  || null,
+        user_level: (currentUser && currentUser.level) || currentUserLevel,
+        archetype:  (currentUser && currentUser.archetype) || null,
+        ...body,
+      }
+    : body;
   return fetch(BACKEND_ROOT + path, {
     method,
     headers: { 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
+    body: enriched ? JSON.stringify(enriched) : undefined,
   }).then(async r => {
     const text = await r.text();
     let parsed = null; try { parsed = text ? JSON.parse(text) : null; } catch (_) {}
@@ -3032,6 +3898,52 @@ function beacon(method, path, body) {
     backendHealthy = false; // subsequent beacons no-op so demo keeps working offline
     return null;
   });
+}
+
+// ───────────────────────────────────────────────────────────────
+// Claude Sonnet-backed chat completion (optional — no-op fallback if backend
+// is down or ANTHROPIC_API_KEY isn't set server-side).
+// ───────────────────────────────────────────────────────────────
+function buildChatContext() {
+  const vid  = currentItem && currentItem.violation_id;
+  const sess = currentItem ? loadAISession(currentItem.ai_session_id) : null;
+  const prior = (sess && sess.messagesByViolation[vid]) || [];
+  const allIntents = sess ? Object.values(sess.intentsByViolation).flat() : [];
+  const siblingIntents = Array.from(new Set(allIntents));
+  return {
+    user_id:           currentUser && currentUser.id,
+    user_name:         currentUser && (currentUser.firstName || currentUser.name),
+    user_level:        currentUser && currentUser.level,
+    archetype:         currentUser && currentUser.archetype,
+    prior_violations:  currentUser && currentUser.priorViolations,
+    appeal_history:    currentUser
+      ? `${currentUser.appealHistory.filed} filed, ${currentUser.appealHistory.approved} approved, ${currentUser.appealHistory.rejected} rejected`
+      : '(none)',
+    ai_session_id:     currentItem && currentItem.ai_session_id,
+    violation_id:      vid,
+    violation_type:    currentItem && currentItem.violation_type,
+    video_ts:          currentDetail && currentDetail.videoTs,
+    policy_description: chatPolicy && (chatPolicy.policyDescLong || chatPolicy.policyDescShort),
+    sibling_intents:   siblingIntents,
+    history:           prior.slice(-10).map(m => ({
+      role: m.role,
+      text: (m.html || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
+    })),
+  };
+}
+
+async function callClaudeViaBackend({ intent, text }) {
+  if (!BACKEND_ROOT || !backendHealthy) return null;
+  try {
+    const r = await fetch(BACKEND_ROOT + '/api/chat/complete', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ intent, text, context: buildChatContext() }),
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data && data.reply ? { reply: data.reply, model: data.model } : null;
+  } catch (_) { return null; }
 }
 
 // ── Editable template runtime ────────────────────────────────────
@@ -3087,29 +3999,39 @@ function applyTemplateOverrides() {
   });
 }
 
-// PRD §2.2 / §3.4 — persistent ai_session registry, scoped by (live_session, violation_type)
-// Keeps cross-violation context (sibling intents) and per-violation conversation history.
-// localStorage-backed so re-entering a Violation Page resumes the chat.
+// PRD §2.2 / §3.4 — persistent ai_session registry, scoped by (user, live_session, violation_type).
+// Each signed-in creator has their own conversation history + sibling context — one creator's
+// prior intents never leak into another creator's aggregation prefix.
 const AI_SESSION_STORAGE_PREFIX = 'aiInsight.session.';
 const aiSessions = {};
 
+// Namespace every storage/memory lookup with the current user_id so each account has its own
+// "file cabinet" of AI sessions (PRD §3.4 data-model implication of tying conversation_id to user).
+function sessionScopeKey(aiSessionId) {
+  const uid = (currentUser && currentUser.id) || 'anon';
+  return uid + '::' + aiSessionId;
+}
+
 function loadAISession(aiSessionId) {
-  if (aiSessions[aiSessionId]) return aiSessions[aiSessionId];
+  const scoped = sessionScopeKey(aiSessionId);
+  if (aiSessions[scoped]) return aiSessions[scoped];
   let snapshot = null;
-  try { snapshot = JSON.parse(localStorage.getItem(AI_SESSION_STORAGE_PREFIX + aiSessionId) || 'null'); } catch (_) {}
-  aiSessions[aiSessionId] = snapshot || {
+  try { snapshot = JSON.parse(localStorage.getItem(AI_SESSION_STORAGE_PREFIX + scoped) || 'null'); } catch (_) {}
+  aiSessions[scoped] = snapshot || {
     aiSessionId,
-    violationsTouched: [],          // ordered violation_ids the user has actually opened a chat for
+    userId: (currentUser && currentUser.id) || 'anon',
+    violationsTouched: [],          // ordered violation_ids THIS user has opened a chat for
     intentsByViolation: {},         // { vid: ['understand', 'improve'] }
     messagesByViolation: {},        // { vid: [{ role:'ai'|'user', html:string }] }
   };
-  return aiSessions[aiSessionId];
+  return aiSessions[scoped];
 }
 
 function saveAISession(aiSessionId) {
-  const sess = aiSessions[aiSessionId];
+  const scoped = sessionScopeKey(aiSessionId);
+  const sess = aiSessions[scoped];
   if (!sess) return;
-  try { localStorage.setItem(AI_SESSION_STORAGE_PREFIX + aiSessionId, JSON.stringify(sess)); } catch (_) {}
+  try { localStorage.setItem(AI_SESSION_STORAGE_PREFIX + scoped, JSON.stringify(sess)); } catch (_) {}
 }
 
 function recordAIMessage(role, html) {
@@ -3184,6 +4106,26 @@ const INTENT_LABELS = {
   disagree:   'why this might be wrong',
 };
 
+// Archetype-specific opener prefix — different creator profiles get a different opening tone.
+function getArchetypePrefix() {
+  if (!currentUser) return '';
+  const a = currentUser.archetype;
+  const name = currentUser.firstName || currentUser.name.split(' ')[0];
+  if (a === 'rookie') {
+    return `<strong>Hi ${name} — this is your first flag.</strong> No stress: I\'ll walk through what the system saw, what rule it matched, and how to keep it from happening again.<br><br>`;
+  }
+  if (a === 'repeat') {
+    return `<strong>${name}, this is your ${currentUser.priorViolations + 1}th Inorganic Gift Solicitation flag in the last 30 days.</strong> Let\'s get to the root cause together — I\'ll also summarize what we\'ve already discussed on earlier flags.<br><br>`;
+  }
+  if (a === 'premium') {
+    return `<strong>Thanks for being a top creator, ${name} ⭐.</strong> A human specialist is one tap above — or I can answer right here if you\'d like.<br><br>`;
+  }
+  if (a === 'appealer') {
+    return `<strong>Hi ${name} — I see you\'ve filed ${currentUser.appealHistory.filed} appeals before (${currentUser.appealHistory.approved} approved).</strong> Let\'s review this flag carefully first; if it still doesn\'t match, the appeal path is open.<br><br>`;
+  }
+  return '';
+}
+
 // PRD §2.2 — surface the AI session aggregation: same-type sibling already discussed.
 function getSiblingPrefix() {
   const ctx = getSiblingContext();
@@ -3197,7 +4139,7 @@ function getSiblingPrefix() {
 function getOpening() {
   const p = chatPolicy;
   const ts = (currentDetail && currentDetail.videoTs) || '';
-  const prefix = getSiblingPrefix();
+  const prefix = getArchetypePrefix() + getSiblingPrefix();
   if (chatMode === 'A') {
     return prefix + `I'm here to help you understand this restriction. The flagged clip is at <strong>${ts}</strong> — tap the video above to review.<br><br>What would you like to know?`;
   }
@@ -3300,6 +4242,9 @@ function openChat(preselectedIntentKey) {
   setStatusBar('light');
   document.getElementById('screen-chat').classList.add('active');
 
+  // Reflect current creator tier in chat chrome (premium banner + topbar pill)
+  refreshPremiumChrome();
+
   // Refresh editable templates — 350ms opener setTimeout below gives it time to land
   fetchTemplates();
 
@@ -3331,30 +4276,31 @@ function openChat(preselectedIntentKey) {
     }
   }
 
-  // Fresh chat — stream opening, then either auto-pick a preselected intent or show 4 root intents
+  // Fresh chat — opener renders instantly (no typewriter so the context lands immediately),
+  // subsequent AI replies keep the 25ms/char streaming per PRD §2.1 Scenario 3.
   setTimeout(() => {
-    appendAIMessage(getOpening(), () => {
-      const intent = pendingChatIntent;
-      pendingChatIntent = null;
-      if (intent) {
-        const all = getRootIntents();
-        const match = all.find(it => it.key === intent);
-        if (match) {
-          setTimeout(() => pickRootIntent(match.key, match.label), 350);
-          return;
-        }
+    appendAIMessageInstant(getOpening());
+    const intent = pendingChatIntent;
+    pendingChatIntent = null;
+    if (intent) {
+      const all = getRootIntents();
+      const match = all.find(it => it.key === intent);
+      if (match) {
+        setTimeout(() => pickRootIntent(match.key, match.label), 350);
+        return;
       }
-      setTimeout(() => showRootIntents(), 200);
-    });
+    }
+    setTimeout(() => showRootIntents(), 250);
   }, 350);
 }
 
-// Instant render (no typewriter) used when restoring persisted history
-function appendAIMessageInstant(html) {
+// Instant render (no typewriter) used when restoring persisted history + for the opener
+function appendAIMessageInstant(html, source) {
   const msgs = document.getElementById('chat-messages');
   const row = document.createElement('div');
   row.className = 'agent-row';
   const safe = clampToCharLimit(html).replace(/\n/g, '<br>');
+  const sourceTag = sourceBadgeHTML(source);
   row.innerHTML = `
     <div class="agent-avatar">🤖</div>
     <div class="bubble-ai-wrap">
@@ -3365,10 +4311,17 @@ function appendAIMessageInstant(html) {
           <button class="bubble-fb-btn" aria-label="Not helpful" data-dir="down">👎</button>
         </div>
       </div>
+      ${sourceTag}
     </div>`;
   msgs.appendChild(row);
   wireMessageFeedback(row.querySelector('.bubble-ai-feedback'));
   scrollChat();
+}
+
+function sourceBadgeHTML(source) {
+  if (source === 'claude')   return `<div class="bubble-source claude">✨ Claude Sonnet 4.6</div>`;
+  if (source === 'template') return `<div class="bubble-source template">📋 Template fallback</div>`;
+  return '';
 }
 function appendUserMessageInstant(text) {
   const msgs = document.getElementById('chat-messages');
@@ -3415,26 +4368,29 @@ function sendChatInput() {
   appendUserMessage(text);
   showTyping();
 
-  // Best-effort interpretation: keyword match to route to an existing intent, otherwise a fallback
-  setTimeout(() => {
-    const lower = text.toLowerCase();
-    const p = chatPolicy;
-    let reply;
-    if (/why|reason|rule|explain|understand/.test(lower)) {
-      reply = chatSelection ? renderTemplate(p.understand.withSelection) : renderTemplate(p.understand.default);
-    } else if (/avoid|prevent|next time|improve|tip|guideline/.test(lower)) {
-      reply = 'Here\'s how to stay compliant:\n\n' + p.improve.tips.map(t => `• ${t}`).join('\n');
-    } else if (/when|timeline|long|end|how long/.test(lower)) {
-      reply = renderTemplate(p.nextSteps.timeline) + '\n\n' + renderTemplate(p.nextSteps.userRights);
-    } else if (/appeal|wrong|mistake|unfair|dispute/.test(lower) && chatMode === 'A') {
-      reply = renderTemplate(p.dispute.triageQuestion);
-    } else if (/example/.test(lower)) {
-      reply = renderTemplate(p.understand.withExample);
-    } else {
-      reply = `I'm not sure I caught that — I can help with:\n\n• Why your LIVE was flagged\n• How to avoid this next time\n• What happens now\n\nTry one of the options below or rephrase your question.`;
-    }
-    appendAIMessage(reply);
-  }, 900);
+  // Compute template fallback via keyword routing, in case Claude is unavailable.
+  const lower = text.toLowerCase();
+  const p = chatPolicy;
+  let templateReply;
+  if (/why|reason|rule|explain|understand/.test(lower)) {
+    templateReply = chatSelection ? renderTemplate(p.understand.withSelection) : renderTemplate(p.understand.default);
+  } else if (/avoid|prevent|next time|improve|tip|guideline/.test(lower)) {
+    templateReply = 'Here\'s how to stay compliant:\n\n' + p.improve.tips.map(t => `• ${t}`).join('\n');
+  } else if (/when|timeline|long|end|how long/.test(lower)) {
+    templateReply = renderTemplate(p.nextSteps.timeline) + '\n\n' + renderTemplate(p.nextSteps.userRights);
+  } else if (/appeal|wrong|mistake|unfair|dispute/.test(lower) && chatMode === 'A') {
+    templateReply = renderTemplate(p.dispute.triageQuestion);
+  } else if (/example/.test(lower)) {
+    templateReply = renderTemplate(p.understand.withExample);
+  } else {
+    templateReply = `I'm not sure I caught that — I can help with:\n\n• Why your LIVE was flagged\n• How to avoid this next time\n• What happens now\n\nTry one of the options below or rephrase your question.`;
+  }
+
+  callClaudeViaBackend({ text }).then(claude => {
+    const replyText = (claude && claude.reply) || templateReply;
+    const source    = claude ? 'claude' : 'template';
+    setTimeout(() => appendAIMessage(replyText, null, source), 400);
+  });
 }
 
 function toggleChatContext() {
@@ -3457,13 +4413,14 @@ function clampToCharLimit(html) {
   return tmp.textContent.slice(0, AI_OUTPUT_CHAR_LIMIT - 1) + '…';
 }
 
-function appendAIMessage(html, onDone) {
+function appendAIMessage(html, onDone, source) {
   const msgs = document.getElementById('chat-messages');
   const existing = msgs.querySelector('.typing-indicator');
   if (existing) existing.remove();
   const row = document.createElement('div');
   row.className = 'agent-row';
   const safe = clampToCharLimit(html).replace(/\n/g, '<br>');
+  const sourceTag = sourceBadgeHTML(source);
   // PRD §2.1 Scenario 3 — thumbs embedded in bubble bottom-right; absent during typing
   row.innerHTML = `
     <div class="agent-avatar">🤖</div>
@@ -3475,6 +4432,7 @@ function appendAIMessage(html, onDone) {
           <button class="bubble-fb-btn" aria-label="Not helpful" data-dir="down">👎</button>
         </div>
       </div>
+      ${sourceTag}
     </div>`;
   msgs.appendChild(row);
   scrollChat();
@@ -3610,30 +4568,38 @@ function pickRootIntent(key, label) {
   recordIntent(key); // PRD §2.2 — feed sibling-context registry
   appendUserMessage(label.replace(/^[\W]+\s*/, '')); // strip emoji prefix
   showTyping();
+
+  // Compute template fallback first — used if Claude is unavailable
   const p = chatPolicy;
-  let reply = '';
-  if (key === 'understand') {
-    reply = chatSelection ? renderTemplate(p.understand.withSelection) : renderTemplate(p.understand.default);
-  } else if (key === 'dispute') {
-    reply = renderTemplate(p.dispute.triageQuestion);
-  } else if (key === 'improve') {
-    // Honor server-side override if ops edited it via dashboard; else assemble from tips[]
+  let templateReply = '';
+  const disputeIntent = (key === 'disagree') ? 'dispute' : key;
+  if (disputeIntent === 'understand') {
+    templateReply = chatSelection ? renderTemplate(p.understand.withSelection) : renderTemplate(p.understand.default);
+  } else if (disputeIntent === 'dispute') {
+    templateReply = renderTemplate(p.dispute.triageQuestion);
+  } else if (disputeIntent === 'improve') {
     if (p.improve.overrideText) {
-      reply = renderTemplate(p.improve.overrideText);
+      templateReply = renderTemplate(p.improve.overrideText);
     } else {
       const tips = p.improve.tips.map(t => `• ${t}`).join('\n');
-      reply = `Here's how to stay compliant:\n\n${tips}`;
+      templateReply = `Here's how to stay compliant:\n\n${tips}`;
     }
-  } else if (key === 'nextSteps') {
+  } else if (disputeIntent === 'nextSteps') {
     if (p.nextSteps.overrideText) {
-      reply = renderTemplate(p.nextSteps.overrideText);
+      templateReply = renderTemplate(p.nextSteps.overrideText);
     } else {
-      reply = renderTemplate(p.nextSteps.timeline) + '\n\n' + renderTemplate(p.nextSteps.userRights);
+      templateReply = renderTemplate(p.nextSteps.timeline) + '\n\n' + renderTemplate(p.nextSteps.userRights);
     }
   }
-  setTimeout(() => {
-    appendAIMessage(reply, () => setTimeout(() => showSecondaryIntents(key), 250));
-  }, 1100);
+
+  callClaudeViaBackend({ intent: disputeIntent }).then(claude => {
+    const replyText = (claude && claude.reply) || templateReply;
+    const source    = claude ? 'claude' : 'template';
+    // Short artificial delay to keep typing indicator visible
+    setTimeout(() => {
+      appendAIMessage(replyText, () => setTimeout(() => showSecondaryIntents(disputeIntent), 250), source);
+    }, 600);
+  });
 }
 
 function showSecondaryIntents(rootKey) {
@@ -3695,9 +4661,13 @@ function disputePath(subKey, userText) {
   const reply = renderTemplate(p.dispute[subKey]);
   setTimeout(() => {
     appendAIMessage(reply, () => setTimeout(() => {
-      // PRD §2.1 / §5: keep dispute → File appeal entry visually equal (no lowlight)
+      // PRD §2.1 / §5: dispute triage offers three equal-weight follow-ups —
+      // understand, submit evidence (task 1.4 · high threshold), file appeal.
       const buttons = [];
       buttons.push({ label: '💡 Actually, I understand now', onClick: () => sayAndContinue('I understand now', chatPolicy.closures.short) });
+      if (chatMode === 'A') {
+        buttons.push({ label: '📎 Submit evidence for 2nd look', onClick: () => triggerEvidenceSubmission() });
+      }
       buttons.push({ label: '↩️ Ask something else', alwaysShow: true, onClick: () => showRootIntents('What else?') });
       buttons.push({ label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.short) });
       if (chatMode === 'A' && chatAppealOffered) {
@@ -3735,9 +4705,22 @@ function endChatWith(msg) {
   setTimeout(() => {
     appendAIMessage(msg || 'Thanks for chatting!', () => {
       clearQuickReplies('Conversation ended ✓');
-      // PRD §2.1 Scenario 4: gate Layer-2 sheet on turn count + Layer-1 sparsity
-      const sameDirectionFeedback = Math.max(layer1Counts.up, layer1Counts.down);
-      if (chatTurnCount >= 2 && sameDirectionFeedback < 3 && !sessionFeedbackGiven) {
+      if (chatTurnCount < 2 || sessionFeedbackGiven) return;
+      // Task 1.2 · auto-derive when Layer-1 is decisive; otherwise prompt.
+      const auto = deriveLayer2FromLayer1();
+      if (auto) {
+        sessionFeedbackGiven = true;
+        beacon('POST', `/api/sessions/${encodeURIComponent(currentItem ? currentItem.ai_session_id : 'unknown')}/feedback`, {
+          choice:       auto.choice,
+          auto_derived: true,
+          confidence:   auto.confidence,
+          source:       auto.source,
+          violation_id: currentItem && currentItem.violation_id,
+          turnCount:    chatTurnCount,
+          layer1:       layer1Counts,
+        });
+        showToast(`Layer 2 · auto-derived · ${auto.choice}`);
+      } else {
         setTimeout(() => document.getElementById('session-feedback-sheet').classList.add('active'), 600);
       }
     });
@@ -3893,6 +4876,26 @@ function showToast(msg) {
 selectScenario(0);
 // Fetch editable templates on boot — refreshes DETAIL_*.proactiveAI + POLICY_* overrides
 fetchTemplates();
+
+// Boot: check for a persisted signed-in user; if none, show login
+renderLoginCards();
+(function bootAccountSystem() {
+  let storedId = null;
+  try { storedId = localStorage.getItem('aiInsight.currentUser'); } catch (_) {}
+  const profile = storedId && USER_PROFILES.find(u => u.id === storedId);
+  if (profile) {
+    setCurrentUser(profile);
+    // Already signed in — go straight to end-stream
+    hideAll();
+    setStatusBar('light');
+    document.getElementById('screen-end-stream').classList.add('active');
+  } else {
+    // Fresh session → account picker
+    hideAll();
+    setStatusBar('light');
+    document.getElementById('screen-login').classList.add('active');
+  }
+})();
 
 // ═══════════════════════════════════
 //  STICKY TOPBAR SCROLL SHADOW

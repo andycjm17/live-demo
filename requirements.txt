@@ -1,0 +1,3 @@
+# Pure Python stdlib — no runtime deps.
+# This file is intentionally empty; it exists so Render.com's Python runtime
+# detector (and any similar platform) knows to pick `python` as the environment.

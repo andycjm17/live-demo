@@ -290,6 +290,126 @@
       display: flex; align-items: center; gap: 10px;
     }
 
+    /* ── AI aggregation inspector ─────────────────── */
+    .agg-chip-row {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 14px;
+      max-height: 120px; overflow-y: auto;
+      padding-bottom: 2px;
+    }
+    .agg-chip {
+      padding: 6px 11px; font-size: 11px;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 100px; color: var(--text);
+      cursor: pointer; font-family: 'SF Mono', Menlo, monospace;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: border-color .15s, background .15s;
+    }
+    .agg-chip:hover { border-color: var(--ink-blue); }
+    .agg-chip.active {
+      background: rgba(176,130,255,.14); border-color: var(--ink-purple);
+      color: var(--ink-purple);
+    }
+    .agg-chip .count {
+      font-weight: 700;
+      padding: 1px 6px; border-radius: 100px;
+      background: rgba(176,130,255,.22);
+      color: var(--ink-purple); font-size: 10px;
+    }
+    .agg-chip.active .count {
+      background: var(--ink-purple); color: #fff;
+    }
+
+    .agg-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px;
+      margin-bottom: 12px;
+    }
+    .agg-card-title {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .6px;
+      color: var(--ink-purple);
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .agg-card-title .badge {
+      font-size: 9px; padding: 2px 6px; border-radius: 100px;
+      background: rgba(176,130,255,.16); color: var(--ink-purple);
+      text-transform: none; letter-spacing: 0; font-weight: 600;
+    }
+
+    .agg-violation-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .agg-violation {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px;
+      border-left: 3px solid var(--ink-blue);
+    }
+    .agg-violation.current { border-left-color: var(--brand); background: rgba(254,44,85,.06); }
+    .agg-violation-id {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 11px; color: var(--text); font-weight: 700;
+    }
+    .agg-violation-meta {
+      font-size: 10px; color: var(--muted);
+      margin-top: 2px;
+    }
+    .agg-violation-stats {
+      display: flex; gap: 10px; margin-top: 8px; font-size: 11px; color: var(--muted);
+    }
+    .agg-violation-stats .s { color: var(--text); font-weight: 700; }
+
+    .agg-timeline {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 11px; line-height: 1.7;
+    }
+    .agg-row {
+      display: flex; gap: 10px; align-items: baseline;
+      padding: 3px 0;
+      border-left: 2px solid transparent;
+      padding-left: 8px;
+    }
+    .agg-row .tm    { color: var(--muted); width: 64px; flex-shrink: 0; }
+    .agg-row .vid   { color: var(--ink-blue); width: 70px; flex-shrink: 0; font-weight: 700; }
+    .agg-row .kind  { color: var(--ink-purple); width: 120px; flex-shrink: 0; }
+    .agg-row .body  { color: var(--text); min-width: 0; word-break: break-word; }
+    .agg-row.boundary {
+      border-left-color: var(--brand);
+      background: rgba(254,44,85,.06);
+      margin: 6px -6px; padding-left: 14px; padding-right: 6px;
+      border-radius: 0 4px 4px 0;
+    }
+    .agg-row.boundary .body::before {
+      content: '← new violation, same ai_session — LLM now has both contexts';
+      font-size: 10px; color: var(--brand); font-weight: 700;
+      display: block;
+    }
+
+    .agg-context {
+      background: #08080a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 11px; line-height: 1.6;
+      white-space: pre;
+      overflow-x: auto;
+      color: var(--text);
+    }
+    .agg-context .k  { color: #82aaff; }
+    .agg-context .s  { color: #c3e88d; }
+    .agg-context .n  { color: #f78c6c; }
+    .agg-context .hl { background: rgba(254,44,85,.14); border-radius: 3px; padding: 1px 3px; }
+
+    .agg-empty {
+      padding: 40px 20px; text-align: center;
+      color: var(--muted); font-size: 12px;
+      border: 1px dashed var(--border); border-radius: 8px;
+    }
+
     /* ── Metrics panel ─────────────────────────── */
     .metric {
       background: var(--panel);
@@ -359,6 +479,11 @@
       <div class="note">PRD §3.3 · Layer 8 · 30s SLA. When ON, mobile demo shows a degraded AI Insight banner.</div>
 
       <div style="margin-top:14px;">
+        <button class="secondary-btn" onclick="seedDemoData()" id="seed-btn">🌱 Seed 100 mock conversations</button>
+        <div class="note" id="seed-note">Fires realistic beacons so metrics populate immediately.</div>
+      </div>
+
+      <div style="margin-top:10px;">
         <button class="secondary-btn" onclick="resetData()">🧹 Reset demo data</button>
         <div class="note">Clears all events + release killswitch.</div>
       </div>
@@ -375,6 +500,7 @@
       <div class="view-toggle">
         <div class="tab active" data-view="events" onclick="switchView('events')">📡 Live events</div>
         <div class="tab" data-view="templates" onclick="switchView('templates')">✏️ Response templates</div>
+        <div class="tab" data-view="aggregation" onclick="switchView('aggregation')">🧩 AI aggregation</div>
       </div>
 
       <!-- Events view -->
@@ -393,6 +519,18 @@
           <div class="filter-chip" data-filter="killswitch.toggle">Killswitch</div>
         </div>
         <div class="events" id="events"></div>
+      </div>
+
+      <!-- AI aggregation inspector (hidden by default) -->
+      <div id="view-aggregation" style="display:none;">
+        <h2 class="section-heading">
+          AI session aggregation inspector
+          <span style="margin-left:8px;color:var(--muted);font-size:11px;font-weight:500;text-transform:none;letter-spacing:0;">
+            PRD §2.2 · UX-independent · AI-aggregated by (live_session, violation_type)
+          </span>
+        </h2>
+        <div class="agg-chip-row" id="agg-chip-row"></div>
+        <div id="agg-inspector"></div>
       </div>
 
       <!-- Templates editor view (hidden by default) -->
@@ -440,11 +578,46 @@
         <div class="v"><span id="m-l2-help">0</span> <span style="color:var(--muted);font-weight:400;">/</span> <span id="m-l2-unh">0</span> <span style="color:var(--muted);font-weight:400;">/</span> <span id="m-l2-skip">0</span></div>
         <div class="sub">helpful / not / skip · PRD §2.1 Scenario 4</div>
         <div class="bar" id="bar-l2"><span class="helpful" style="width:0"></span><span class="unhelpful" style="width:0"></span><span class="skip" style="width:0"></span></div>
+        <div class="sub" style="margin-top:6px;">
+          Auto-derived from Layer-1: <span id="m-l2-auto">0</span>
+          (<span id="m-l2-auto-pct">—</span>)
+        </div>
+      </div>
+
+      <div class="metric">
+        <div class="k">Restriction agreement · Track C (violation page)</div>
+        <div class="v"><span id="m-restrict-agree">0</span> <span style="color:var(--muted);font-weight:400;">vs</span> <span id="m-restrict-disagree">0</span></div>
+        <div class="sub"><span id="m-restrict-pct">—</span> agree with enforcement · PRD §1.1</div>
+      </div>
+
+      <div class="metric">
+        <div class="k">Evidence submissions · task 1.4</div>
+        <div class="v"><span id="m-ev-sub">0</span></div>
+        <div class="sub">
+          priority: <span id="m-ev-pos">0</span> · neutral: <span id="m-ev-neu">0</span>
+          · threshold <span id="m-ev-threshold">0.85</span>
+        </div>
+        <div class="sub" style="margin-top:6px;">
+          AI ↔ reviewer agreement: <strong id="m-ev-agreement">—</strong> (<span id="m-ev-reviewer-total">0</span> decisions)
+        </div>
+        <button class="secondary-btn" style="margin-top:8px;padding:6px 10px;font-size:11px;"
+                onclick="simulateReviewer()">🎲 Simulate reviewer decision</button>
       </div>
 
       <div class="metric">
         <div class="k">Intent distribution</div>
         <div id="intent-bars" style="margin-top:6px;"></div>
+      </div>
+
+      <div class="metric">
+        <div class="k">Creator tier distribution (G1–G11)</div>
+        <div id="tier-bars" style="margin-top:6px;"></div>
+      </div>
+
+      <div class="metric">
+        <div class="k">Human agent queue · G8-G11 only</div>
+        <div class="v" id="m-human-queued">0</div>
+        <div class="sub">Premium creators routed to a human agent</div>
       </div>
 
       <div class="metric">
@@ -664,6 +837,29 @@
       bar2.querySelector('.unhelpful').style.width = tot2 ? ((l2.unhelpful || 0) / tot2 * 100) + '%' : '0';
       bar2.querySelector('.skip').style.width      = tot2 ? ((l2.skip || 0)      / tot2 * 100) + '%' : '0';
 
+      // Layer-2 auto-derived split (task 1.2)
+      const autoTot = ((l2.auto && l2.auto.helpful) || 0) + ((l2.auto && l2.auto.unhelpful) || 0);
+      const l2Total = (l2.helpful || 0) + (l2.unhelpful || 0);
+      document.getElementById('m-l2-auto').textContent     = autoTot;
+      document.getElementById('m-l2-auto-pct').textContent = l2Total ? (Math.round((autoTot / l2Total) * 100) + '%') : '—';
+
+      // Track C · Restriction agreement (task 1.1)
+      const ra = m.restriction_agreement || {};
+      document.getElementById('m-restrict-agree').textContent    = ra.agree || 0;
+      document.getElementById('m-restrict-disagree').textContent = ra.disagree || 0;
+      document.getElementById('m-restrict-pct').textContent      =
+        (ra.pct_agree == null) ? '—' : (Math.round(ra.pct_agree * 100) + '%');
+
+      // Evidence submissions (task 1.4)
+      const ev = m.evidence || {};
+      document.getElementById('m-ev-sub').textContent            = ev.submitted || 0;
+      document.getElementById('m-ev-pos').textContent            = ev.preliminary_positive || 0;
+      document.getElementById('m-ev-neu').textContent            = ev.preliminary_neutral || 0;
+      document.getElementById('m-ev-threshold').textContent      = ev.threshold != null ? ev.threshold.toFixed(2) : '0.85';
+      document.getElementById('m-ev-reviewer-total').textContent = ev.reviewer_decisions || 0;
+      document.getElementById('m-ev-agreement').textContent      =
+        (ev.ai_reviewer_agreement_rate == null) ? '—' : (Math.round(ev.ai_reviewer_agreement_rate * 100) + '%');
+
       const intents = m.intents || {};
       const keys = Object.keys(intents);
       const max = Math.max(1, ...Object.values(intents));
@@ -675,6 +871,27 @@
               <span class="num">${intents[k]}</span>
             </div>`).join('')
         : '<div style="color:var(--muted);font-size:11px;padding:4px 0;">No intents picked yet.</div>';
+
+      // Tier distribution (G1-G11). Always render all 11 bars so zeros are visible.
+      const tiers = m.tiers || {};
+      const tierMax = Math.max(1, ...Object.values(tiers));
+      const tierRows = [];
+      for (let i = 1; i <= 11; i++) {
+        const lbl = 'G' + i;
+        const n = tiers[lbl] || 0;
+        const premium = i >= 8;
+        const fillColor = premium ? 'var(--brand)' : 'var(--ink-purple)';
+        tierRows.push(`
+          <div class="intent-row">
+            <span class="lbl" style="${premium ? 'color:var(--brand);' : ''}">${lbl}${premium ? ' ⭐' : ''}</span>
+            <span class="bar-wrap"><span class="bar-fill" style="width:${(n / tierMax) * 100}%;background:${fillColor};"></span></span>
+            <span class="num">${n}</span>
+          </div>`);
+      }
+      document.getElementById('tier-bars').innerHTML = tierRows.join('');
+
+      // Human agent queue count (G8-G11 only)
+      document.getElementById('m-human-queued').textContent = m.human_agent_queued || 0;
     }
 
     // ── Controls ───────────────────────────────────
@@ -695,6 +912,206 @@
       await fetch('/api/admin/reset', { method: 'POST' });
     }
 
+    // Task 1.4 · simulate a reviewer's final decision on a pending evidence submission.
+    // Populates the agreement-rate metric and logs reviewer.final_decision events.
+    async function simulateReviewer() {
+      try {
+        const r = await fetch('/api/evidence/simulate-reviewer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        if (r.status === 404) {
+          alert('No pending evidence submissions. Submit evidence from the mobile demo first.');
+          return;
+        }
+        const data = await r.json();
+        alert(
+          `Reviewer ${data.decision === 'approved' ? '✓ approved' : '✗ denied'} ${data.violation_id}\n` +
+          `AI preliminary: ${data.preliminary_positive ? 'positive' : 'neutral'}\n` +
+          `Agreed with AI: ${data.agreed_with_ai ? 'yes' : 'no'}`
+        );
+      } catch (e) { alert('Simulate reviewer failed: ' + e); }
+    }
+
+    // ── Seed 100 mock conversations ────────────────
+    // Fires realistic events at the same endpoints the mobile demo uses.
+    // Spread over ~6 seconds so the dashboard visibly fills up.
+    const SEED_LIVE_SESSIONS = [
+      'ls_2026_04_13_evening', 'ls_2026_04_13_afternoon',
+      'ls_2026_04_12_night',   'ls_2026_04_11_afternoon',
+      'ls_2026_04_10_evening', 'ls_2026_04_09_morning',
+      'ls_2026_04_08_evening', 'ls_2026_04_07_night',
+    ];
+    const SEED_VIOLATION_TYPES = ['body_exposure', 'inorganic_gift_solicitation'];
+    const SEED_INTENTS = [
+      { key: 'understand', label: '💡 Why was my LIVE flagged?',           weight: 45 },
+      { key: 'improve',    label: '📚 How do I avoid this next time?',      weight: 25 },
+      { key: 'nextSteps',  label: '⏱️ What happens now?',                   weight: 20 },
+      { key: 'disagree',   label: '🤔 I have a different view',             weight: 10 },
+    ];
+    const AI_REPLY_BY_INTENT = {
+      understand: [
+        'Your LIVE was flagged because the system detected <strong>patterns</strong> that violate our Community Guidelines.',
+        'The flagged segment contains signals that our detection pipeline matched to the policy.',
+        'At the flagged timestamp, the system detected the pattern that triggered enforcement.',
+      ],
+      improve: [
+        'Here\'s how to stay compliant:\n\n• Review the policy guidance\n• Avoid the flagged patterns\n• Focus on authentic content',
+        'To avoid this next time: follow Community Guidelines and review Creator Academy best practices.',
+      ],
+      nextSteps: [
+        'This restriction is active for 7 days. It lifts automatically — you don\'t need to do anything.',
+        'Reach is limited temporarily. Gifting is unaffected. You can file an appeal any time.',
+      ],
+      disagree: [
+        'I hear you — context matters. A human reviewer can assess the full clip if you file an appeal.',
+        'If you believe this was misapplied, you can file an appeal and a specialist will review.',
+      ],
+    };
+    const USER_REPLIES = [
+      'Got it, thanks', 'What exactly triggered it?', 'How long does this last?',
+      'Can I appeal this?', 'That makes sense', 'Where can I learn more?',
+      'What about next time?', 'This seems wrong', 'Understood',
+    ];
+
+    function weightedPick(arr) {
+      const total = arr.reduce((s, x) => s + x.weight, 0);
+      let r = Math.random() * total;
+      for (const x of arr) { if ((r -= x.weight) <= 0) return x; }
+      return arr[arr.length - 1];
+    }
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+    // Five archetype accounts (mirrors mobile demo USER_PROFILES). Each mock convo gets
+    // one — 20 conversations per archetype — so backend sees the same 5 user_ids the
+    // mobile demo would produce. Round-robin keeps the distribution exact.
+    const SEED_ACCOUNTS = [
+      { user_id: 'u_sarah', name: 'Sarah Chen',   level: 2,  archetype: 'rookie'   },
+      { user_id: 'u_jay',   name: 'Jay Park',     level: 5,  archetype: 'regular'  },
+      { user_id: 'u_mike',  name: 'Mike Torres',  level: 4,  archetype: 'repeat'   },
+      { user_id: 'u_zoe',   name: 'Zoe Wang',     level: 10, archetype: 'premium'  },
+      { user_id: 'u_alex',  name: 'Alex Rivera',  level: 7,  archetype: 'appealer' },
+    ];
+    function pickAccount(i) { return SEED_ACCOUNTS[i % SEED_ACCOUNTS.length]; }
+
+    function generateSeedPlan(conversationCount) {
+      const plan = [];
+      for (let i = 0; i < conversationCount; i++) {
+        const liveSession   = pick(SEED_LIVE_SESSIONS);
+        const violationType = pick(SEED_VIOLATION_TYPES);
+        const aiSessionId   = `${liveSession}:${violationType}`;
+        const violationId   = `v_mock_${String(i).padStart(3, '0')}`;
+        const acct          = pickAccount(i);
+        const userLevel     = acct.level;
+        const userId        = acct.user_id;
+
+        // session.open
+        plan.push({ path: `/api/sessions/${encodeURIComponent(aiSessionId)}/open`, body: {
+          violation_id: violationId, violation_type: violationType, live_session_id: liveSession,
+          user_id: userId, user_name: acct.name, user_level: userLevel, archetype: acct.archetype,
+        }});
+
+        const tierCtx = { user_id: userId, user_name: acct.name, user_level: userLevel, archetype: acct.archetype };
+        const intentCount = 1 + Math.floor(Math.random() * 3); // 1-3 intents per convo
+        const pickedKeys = new Set();
+        let turns = 0;
+        for (let j = 0; j < intentCount; j++) {
+          const intent = weightedPick(SEED_INTENTS);
+          if (pickedKeys.has(intent.key)) continue;
+          pickedKeys.add(intent.key);
+
+          plan.push({ path: `/api/sessions/${encodeURIComponent(aiSessionId)}/intents`, body: {
+            intent: intent.key, violation_id: violationId, label: intent.label, ...tierCtx,
+          }});
+          plan.push({ path: `/api/sessions/${encodeURIComponent(aiSessionId)}/messages`, body: {
+            role: 'user', text: intent.label.replace(/^\W+\s*/, ''),
+            violation_id: violationId, turn: ++turns, ...tierCtx,
+          }});
+          plan.push({ path: `/api/sessions/${encodeURIComponent(aiSessionId)}/messages`, body: {
+            role: 'ai', text: pick(AI_REPLY_BY_INTENT[intent.key] || ['...']),
+            violation_id: violationId, turn: turns, ...tierCtx,
+          }});
+          // Layer-1 feedback distribution: 65% up, 15% down, 20% none
+          const r = Math.random();
+          if (r < 0.65) {
+            plan.push({ path: '/api/messages/feedback', body: {
+              direction: 'up', ai_session_id: aiSessionId, violation_id: violationId, turn: turns, ...tierCtx,
+            }});
+          } else if (r < 0.80) {
+            plan.push({ path: '/api/messages/feedback', body: {
+              direction: 'down', ai_session_id: aiSessionId, violation_id: violationId, turn: turns, ...tierCtx,
+            }});
+          }
+
+          // Occasional free-text follow-up
+          if (Math.random() < 0.35) {
+            plan.push({ path: `/api/sessions/${encodeURIComponent(aiSessionId)}/messages`, body: {
+              role: 'user', text: pick(USER_REPLIES),
+              violation_id: violationId, turn: ++turns, ...tierCtx,
+            }});
+          }
+        }
+
+        // Premium-only: G8-G11 have ~40% chance of queueing for a human agent.
+        // Tagged as 'system' role + human_agent_queued event so dashboard can slice.
+        if (userLevel >= 8 && Math.random() < 0.40) {
+          const tierBoost = userLevel - 7;
+          const position = Math.max(1, 5 - tierBoost + Math.floor(Math.random() * 2));
+          const etaMin   = Math.max(1, 4 - tierBoost);
+          plan.push({ path: `/api/sessions/${encodeURIComponent(aiSessionId)}/messages`, body: {
+            role: 'system',
+            text: `Queued for human agent · tier G${userLevel} · position #${position} · eta ${etaMin}m`,
+            violation_id: violationId,
+            event: 'human_agent_queued',
+            queue_position: position, queue_eta_min: etaMin,
+            ...tierCtx,
+          }});
+        }
+
+        // Layer-2 session feedback (only if >=2 turns, per PRD §2.1 Scenario 4)
+        if (turns >= 2 && Math.random() < 0.55) {
+          const r = Math.random();
+          const choice = r < 0.55 ? 'helpful' : (r < 0.75 ? 'unhelpful' : 'skip');
+          plan.push({ path: `/api/sessions/${encodeURIComponent(aiSessionId)}/feedback`, body: {
+            choice, violation_id: violationId, turnCount: turns, ...tierCtx,
+          }});
+        }
+      }
+      return plan;
+    }
+
+    async function seedDemoData() {
+      const btn = document.getElementById('seed-btn');
+      const note = document.getElementById('seed-note');
+      if (btn.disabled) return;
+      if (!confirm('Seed 100 mock conversations? This will add ~500-800 events to the stream.')) return;
+
+      btn.disabled = true;
+      const plan = generateSeedPlan(100);
+      note.textContent = `Seeding 0 / ${plan.length} events…`;
+
+      // Fire in batches with a small stagger so the live stream visibly fills up.
+      const BATCH = 20;
+      const GAP_MS = 80;
+      let done = 0;
+      for (let i = 0; i < plan.length; i += BATCH) {
+        const slice = plan.slice(i, i + BATCH);
+        await Promise.all(slice.map(e =>
+          fetch(e.path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(e.body),
+          }).catch(() => null)
+        ));
+        done += slice.length;
+        note.textContent = `Seeding ${done} / ${plan.length} events…`;
+        if (i + BATCH < plan.length) await new Promise(r => setTimeout(r, GAP_MS));
+      }
+      note.textContent = `✓ Seeded ${plan.length} events across 100 conversations.`;
+      btn.disabled = false;
+    }
+
     // ── View toggle + template editor ─────────────
     let currentView = 'events';
 
@@ -703,9 +1120,250 @@
       document.querySelectorAll('.view-toggle .tab').forEach(t => {
         t.classList.toggle('active', t.dataset.view === view);
       });
-      document.getElementById('view-events').style.display    = (view === 'events')    ? '' : 'none';
-      document.getElementById('view-templates').style.display = (view === 'templates') ? '' : 'none';
-      if (view === 'templates') loadTemplates();
+      document.getElementById('view-events').style.display      = (view === 'events')      ? '' : 'none';
+      document.getElementById('view-templates').style.display   = (view === 'templates')   ? '' : 'none';
+      document.getElementById('view-aggregation').style.display = (view === 'aggregation') ? '' : 'none';
+      if (view === 'templates')   loadTemplates();
+      if (view === 'aggregation') loadAggregation();
+    }
+
+    // ── AI aggregation inspector ─────────────────────
+    let selectedAggSid = null;
+    async function loadAggregation() {
+      try {
+        const s = await (await fetch('/api/admin/sessions')).json();
+        const sessions = (s.sessions || []).filter(x => x.ai_session_id);
+        // Default: session with most violations (best aggregation story)
+        if (!selectedAggSid || !sessions.find(x => x.ai_session_id === selectedAggSid)) {
+          const best = sessions.slice().sort((a, b) => (b.violations - a.violations) || (b.events - a.events))[0];
+          selectedAggSid = best && best.ai_session_id;
+        }
+        renderAggChips(sessions);
+        if (selectedAggSid) await renderAggInspector(selectedAggSid);
+        else document.getElementById('agg-inspector').innerHTML =
+          '<div class="agg-empty">No AI sessions yet. Seed 100 mock conversations or interact with the mobile demo to populate.</div>';
+      } catch (e) {
+        document.getElementById('agg-inspector').innerHTML = `<div class="agg-empty" style="color:var(--err);">Error: ${e}</div>`;
+      }
+    }
+
+    function renderAggChips(sessions) {
+      const row = document.getElementById('agg-chip-row');
+      if (!sessions.length) { row.innerHTML = '<div style="color:var(--muted);font-size:11px;">No sessions yet.</div>'; return; }
+      row.innerHTML = sessions.map(s => {
+        const active = s.ai_session_id === selectedAggSid;
+        const parts = (s.ai_session_id || '').split(':');
+        const short = (parts[0] || '').replace('ls_2026_', '').replace(/_/g, ' ') + ' · ' + (parts[1] || '').replace(/_/g, ' ');
+        return `<button class="agg-chip ${active ? 'active' : ''}" onclick="selectAgg('${cssEscape(s.ai_session_id)}')"
+                        title="${s.ai_session_id}">
+                  ${short}
+                  <span class="count">${s.violations} vio</span>
+                </button>`;
+      }).join('');
+    }
+
+    async function selectAgg(sid) {
+      selectedAggSid = sid;
+      renderAggChips(Array.from(document.querySelectorAll('.agg-chip')).map(el => ({
+        ai_session_id: el.title,
+        violations: parseInt(el.querySelector('.count').textContent, 10) || 0,
+      })));
+      await renderAggInspector(sid);
+    }
+
+    async function renderAggInspector(sid) {
+      const root = document.getElementById('agg-inspector');
+      root.innerHTML = '<div class="agg-empty">Loading…</div>';
+      const d = await (await fetch(`/api/sessions/${encodeURIComponent(sid)}`)).json();
+      const events = d.events || [];
+      if (!events.length) { root.innerHTML = '<div class="agg-empty">No events for this session.</div>'; return; }
+
+      // Group events by violation_id — preserve order of first appearance
+      const byVio = new Map();
+      const vioOrder = [];
+      events.forEach(e => {
+        const v = e.violation_id || '(no vid)';
+        if (!byVio.has(v)) { byVio.set(v, []); vioOrder.push(v); }
+        byVio.get(v).push(e);
+      });
+
+      // Per-violation stats
+      const violations = vioOrder.map(vid => {
+        const list = byVio.get(vid);
+        const firstTs = list[0].ts;
+        const lastTs  = list[list.length - 1].ts;
+        const intents = list.filter(e => e.kind === 'intent').map(e => e.payload.intent);
+        const l1up    = list.filter(e => e.kind === 'feedback.layer1' && e.payload.direction === 'up').length;
+        const l1down  = list.filter(e => e.kind === 'feedback.layer1' && e.payload.direction === 'down').length;
+        const msgs    = list.filter(e => e.kind === 'message').length;
+        const humanQ  = list.some(e => e.payload && e.payload.event === 'human_agent_queued');
+        const uLvl    = (list.find(e => e.payload && e.payload.user_level) || {}).payload?.user_level;
+        return { vid, firstTs, lastTs, intents, l1up, l1down, msgs, humanQ, uLvl };
+      });
+      const currentVid = violations[violations.length - 1].vid;  // treat most recent as "the one being viewed"
+
+      // Derive live_session + violation_type from sid
+      const [liveSid, vioType] = sid.split(':');
+
+      // Build the synthetic LLM context blob — this is the key demo artefact
+      const context = buildLLMContext(sid, liveSid, vioType, violations, events, currentVid);
+      const contextJSON = syntaxHighlightJSON(context, ['sibling_violations', 'shared_intents', 'cross_violation_history', 'aggregation_note']);
+
+      root.innerHTML = `
+        <div class="agg-card">
+          <div class="agg-card-title">
+            ai_session_id
+            <span class="badge">= live_session + violation_type</span>
+          </div>
+          <div style="font-family:'SF Mono',Menlo,monospace;font-size:13px;color:var(--text);word-break:break-all;">
+            ${sid}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">
+            <strong style="color:var(--ink-purple);">${violations.length}</strong> violation${violations.length === 1 ? '' : 's'} share this AI context.
+            UX-layer: each violation has its own page + push + clip.
+            AI-layer: a single rolling context threads all of them.
+          </div>
+        </div>
+
+        <div class="agg-card">
+          <div class="agg-card-title">Violations in this session <span class="badge">UX-independent</span></div>
+          <div class="agg-violation-grid">
+            ${violations.map(v => `
+              <div class="agg-violation ${v.vid === currentVid ? 'current' : ''}">
+                <div class="agg-violation-id">${v.vid}${v.vid === currentVid ? ' · current' : ''}</div>
+                <div class="agg-violation-meta">
+                  opened ${new Date(v.firstTs * 1000).toLocaleString([], {hour:'2-digit', minute:'2-digit', month:'short', day:'numeric'})}
+                  ${v.uLvl ? ` · G${v.uLvl}${v.uLvl >= 8 ? ' ⭐' : ''}` : ''}
+                </div>
+                <div class="agg-violation-stats">
+                  <span><span class="s">${v.msgs}</span> msgs</span>
+                  <span><span class="s">${v.intents.length}</span> intents</span>
+                  <span><span class="s">${v.l1up}</span>👍</span>
+                  <span><span class="s">${v.l1down}</span>👎</span>
+                  ${v.humanQ ? '<span style="color:var(--brand);">🧑‍💼 human</span>' : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="agg-card">
+          <div class="agg-card-title">Cross-violation timeline <span class="badge">AI-layer · shared memory</span></div>
+          <div class="agg-timeline">${renderAggTimeline(events, currentVid)}</div>
+        </div>
+
+        <div class="agg-card">
+          <div class="agg-card-title">
+            LLM context for the <em>next</em> turn on <code style="color:var(--brand);">${currentVid}</code>
+            <span class="badge">this is what the LLM sees</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5;">
+            The pink-highlighted fields are cross-violation signals — they only exist because the AI-layer aggregates (§2.2 Strategy β).
+            Without aggregation, the LLM would have to answer <code>${currentVid}</code> blind to any prior context.
+          </div>
+          <div class="agg-context">${contextJSON}</div>
+        </div>
+      `;
+    }
+
+    function renderAggTimeline(events, currentVid) {
+      let lastVid = null;
+      return events.map(e => {
+        const ts = new Date(e.ts * 1000);
+        const tm = ts.toLocaleTimeString([], { hour12: false });
+        const vid = e.violation_id || '—';
+        const boundary = (vid !== lastVid && lastVid !== null);
+        lastVid = vid;
+        const summary = describeEvent(e);
+        return `<div class="agg-row ${boundary ? 'boundary' : ''}">
+          <span class="tm">${tm}</span>
+          <span class="vid">${vid === currentVid ? '→' : '·'} ${vid}</span>
+          <span class="kind">${e.kind}</span>
+          <span class="body">${summary}</span>
+        </div>`;
+      }).join('');
+    }
+
+    function describeEvent(e) {
+      const p = e.payload || {};
+      if (e.kind === 'session.open')     return `opened ${p.violation_type ? '· ' + p.violation_type : ''}`;
+      if (e.kind === 'intent')           return `picked <strong>${p.intent}</strong>`;
+      if (e.kind === 'message')          return `<strong>${p.role || 'ai'}</strong>: ${(p.text || '').slice(0, 70).replace(/</g, '&lt;')}${p.event === 'human_agent_queued' ? ' <span style="color:var(--brand)">🧑‍💼 queued</span>' : ''}`;
+      if (e.kind === 'feedback.layer1')  return `Layer-1 ${p.direction === 'up' ? '👍' : '👎'}`;
+      if (e.kind === 'feedback.layer2')  return `Layer-2 <strong>${p.choice}</strong>`;
+      return JSON.stringify(p).slice(0, 80);
+    }
+
+    function buildLLMContext(sid, liveSid, vioType, violations, events, currentVid) {
+      const current = violations.find(v => v.vid === currentVid) || violations[violations.length - 1];
+      const siblings = violations.filter(v => v.vid !== currentVid);
+      const sharedIntents = Array.from(new Set(siblings.flatMap(v => v.intents)));
+      const sharedMsgs = events
+        .filter(e => e.kind === 'message' && e.payload && e.payload.text)
+        .map(e => ({
+          violation_id: e.violation_id,
+          role: e.payload.role || 'ai',
+          text: (e.payload.text || '').slice(0, 120),
+        }));
+      const totalL1Up   = violations.reduce((s, v) => s + v.l1up, 0);
+      const totalL1Down = violations.reduce((s, v) => s + v.l1down, 0);
+      const uLvl = violations.find(v => v.uLvl)?.uLvl;
+
+      return {
+        ai_session_id: sid,
+        live_session_id: liveSid,
+        violation_type: vioType,
+        user_level: uLvl || null,
+        premium_channel_available: (uLvl || 0) >= 8,
+        current_violation: {
+          id: current.vid,
+          opened_at: new Date(current.firstTs * 1000).toISOString(),
+          intents_discussed: current.intents,
+          message_count: current.msgs,
+        },
+        sibling_violations: siblings.map(v => ({
+          id: v.vid,
+          opened_at: new Date(v.firstTs * 1000).toISOString(),
+          intents_discussed: v.intents,
+          layer1_feedback: { up: v.l1up, down: v.l1down },
+          message_count: v.msgs,
+        })),
+        shared_intents: sharedIntents,
+        cross_violation_history: sharedMsgs.slice(-10),
+        feedback_signals: {
+          layer1_up: totalL1Up,
+          layer1_down: totalL1Down,
+          pct_helpful: (totalL1Up + totalL1Down) ? (totalL1Up / (totalL1Up + totalL1Down)) : null,
+        },
+        aggregation_note:
+          `This is your ${violations.length > 1 ? violations.length + '-way' : 'single'} aggregated context. ` +
+          `Mobile demo only renders current_violation's messages; LLM sees all sibling signals to maintain continuity.`,
+      };
+    }
+
+    function syntaxHighlightJSON(obj, highlightKeys) {
+      const keys = new Set(highlightKeys || []);
+      const json = JSON.stringify(obj, null, 2);
+      // Simple tokenizer — colour keys, strings, numbers; mark highlighted keys + their values
+      return json.replace(
+        /("(\\u[\dA-Fa-f]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(\.\d*)?([eE][+\-]?\d+)?)/g,
+        match => {
+          let cls = 'n';
+          let isKey = false;
+          if (/^"/.test(match)) {
+            if (/:$/.test(match)) { cls = 'k'; isKey = true; }
+            else cls = 's';
+          } else if (/true|false|null/.test(match)) {
+            cls = 'n';
+          }
+          const escaped = match.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          if (isKey) {
+            const bareKey = match.replace(/[":\s]/g, '');
+            if (keys.has(bareKey)) return `<span class="hl"><span class="${cls}">${escaped}</span></span>`;
+          }
+          return `<span class="${cls}">${escaped}</span>`;
+        }
+      );
     }
 
     // Keyed by template key → {content, default_content, updated_at, modified}
