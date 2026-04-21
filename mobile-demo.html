@@ -947,6 +947,61 @@
       40% { transform: translateY(-6px); }
     }
 
+    /* ── Two-row option surface (graph-state UX) ─────────────────────
+       Replaces the legacy .quick-replies single column. Top row is the
+       conversational graph (any intent reachable from any node). Bottom row
+       is agent capabilities (evidence / appeal / human handoff), tinted so
+       viewers can see at-a-glance "this isn't more chat — this is an action". */
+    .qr-conversation, .qr-agent {
+      flex-shrink: 0;
+      padding: 8px 16px 8px;
+      background: white;
+      border-top: 1px solid var(--border);
+    }
+    .qr-conversation:last-child, .qr-agent:last-child { padding-bottom: 12px; }
+    .qr-agent {
+      background: linear-gradient(180deg, rgba(120,60,200,.05), rgba(120,60,200,.02));
+      border-top: 1px solid rgba(120,60,200,.18);
+    }
+    .qr-section-label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .6px;
+      color: var(--text-muted);
+      padding: 4px 0 6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .qr-section-label::before {
+      content: '';
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-muted);
+    }
+    .qr-section-label.agent { color: #783cc8; }
+    .qr-section-label.agent::before { background: #783cc8; }
+
+    .qr-buttons {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+
+    /* Used to highlight an agent-action button when AI is gently nudging */
+    .quick-reply-btn.agent-emphasis {
+      border-color: #b082ff;
+      background: rgba(176,130,255,.06);
+      box-shadow: 0 0 0 3px rgba(176,130,255,.12);
+      animation: agentNudge 1.8s ease-in-out infinite;
+    }
+    @keyframes agentNudge {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(176,130,255,.10); }
+      50%      { box-shadow: 0 0 0 6px rgba(176,130,255,.18); }
+    }
+
+    /* Visual hint for "current intent" in the graph navigator */
+    .quick-reply-btn.is-current {
+      background: rgba(176,130,255,.10);
+      border-color: #b082ff;
+      color: #5c3890;
+    }
+
+    /* Legacy .quick-replies kept as no-op sink (no longer rendered, but keep CSS for safety) */
     .quick-replies {
       flex-shrink: 0;
       padding: 10px 16px 12px;
@@ -2205,8 +2260,16 @@
       </div>
     </div>
     <div class="chat-messages" id="chat-messages"></div>
-    <div class="quick-replies" id="quick-replies">
-      <div class="quick-replies-label">Choose a reply</div>
+    <!-- Two-row option surface · graph-state UX
+         · Conversation row: chat-quality intents (root + sub), reachable from any node
+         · Agent-actions row: agent capabilities (📎 evidence · 📝 appeal · 🧑‍💼 human) -->
+    <div class="qr-conversation" id="qr-conversation">
+      <div class="qr-section-label">Conversation</div>
+      <div class="qr-buttons" id="qr-conversation-btns"></div>
+    </div>
+    <div class="qr-agent" id="qr-agent">
+      <div class="qr-section-label agent">Agent actions</div>
+      <div class="qr-buttons" id="qr-agent-btns"></div>
     </div>
     <div class="chat-input-bar">
       <div class="chat-input-wrap">
@@ -3063,6 +3126,34 @@ function finalizeCloseChat() {
   hideAll();
   setStatusBar('light');
   document.getElementById(chatReturnScreen).classList.add('active');
+  // After exiting chat, the prior intent buttons on the Violation Page are stale
+  // (they were rendered before any conversation existed). Re-render the option
+  // surface so the freshly-created localStorage history flips us into the
+  // "🗨️ Keep conversation" affordance.
+  refreshDetailAIOptions();
+}
+
+// Re-paint just the option panel beneath the AI Insight stream (no re-streaming
+// the opener). Used when a chat closes so "Keep conversation" can replace the
+// 4-intent set. Safe no-op if the AI panel isn't currently visible.
+function refreshDetailAIOptions() {
+  const aiOpts = (chatReturnScreen === 'screen-appeal-detail')
+    ? document.getElementById('appeal-ai-options')
+    : document.getElementById('detail-ai-options');
+  if (!aiOpts) return;
+  const aiSection = (chatReturnScreen === 'screen-appeal-detail')
+    ? document.getElementById('appeal-ai-stream')
+    : document.getElementById('detail-ai-stream');
+  if (!aiSection || aiSection.style.display === 'none') return; // panel not in use
+  const openChatFn = (chatReturnScreen === 'screen-appeal-detail')
+    ? (intentKey) => openChatFromAppeal(intentKey)
+    : (intentKey) => openChat(intentKey);
+  const learningOnly = (chatReturnScreen === 'screen-appeal-detail') &&
+    (() => {
+      const item = HISTORY_ITEMS[currentHistoryIdx];
+      return !!(item && item.appealResult && item.appealResult.learningOnly);
+    })();
+  showStreamOptions(aiOpts, openChatFn, learningOnly);
 }
 
 // ═══════════════════════════════════
@@ -4185,6 +4276,10 @@ function openChat(preselectedIntentKey) {
   layer1Counts = { up: 0, down: 0 };
   sessionFeedbackGiven = false;
   pendingChatIntent = (typeof preselectedIntentKey === 'string') ? preselectedIntentKey : null;
+  // Graph-state UX bookkeeping — reset per session so guidance + emphasis start fresh
+  currentRootIntent       = null;
+  disputeSignalCount      = 0;
+  evidenceGuidanceCount   = 0;
 
   // Badge
   const chatBadge = document.getElementById('chat-punish-badge');
@@ -4271,7 +4366,11 @@ function openChat(preselectedIntentKey) {
         if (m.role === 'ai') appendAIMessageInstant(m.html);
         else appendUserMessageInstant(m.html);
       });
-      setTimeout(() => showRootIntents('Welcome back. What else would you like to know?'), 350);
+      // Welcome-back marker (rendered AFTER the prior history, before options surface)
+      setTimeout(() => {
+        appendAIMessageInstant('Welcome back — pick up wherever you like.');
+        renderChatOptions({ rootIntent: null });
+      }, 250);
       return;
     }
   }
@@ -4283,14 +4382,14 @@ function openChat(preselectedIntentKey) {
     const intent = pendingChatIntent;
     pendingChatIntent = null;
     if (intent) {
-      const all = getRootIntents();
+      const all = ROOT_INTENT_DEFS;
       const match = all.find(it => it.key === intent);
       if (match) {
         setTimeout(() => pickRootIntent(match.key, match.label), 350);
         return;
       }
     }
-    setTimeout(() => showRootIntents(), 250);
+    setTimeout(() => renderChatOptions({ rootIntent: null }), 250);
   }, 350);
 }
 
@@ -4386,10 +4485,25 @@ function sendChatInput() {
     templateReply = `I'm not sure I caught that — I can help with:\n\n• Why your LIVE was flagged\n• How to avoid this next time\n• What happens now\n\nTry one of the options below or rephrase your question.`;
   }
 
+  // Detect dispute keywords in the free-text — feeds the evidence-guidance heuristic.
+  if (/wrong|unfair|mistake|appeal|error|incorrect|disagree/i.test(text)) {
+    disputeSignalCount++;
+  }
+
   callClaudeViaBackend({ text }).then(claude => {
-    const replyText = (claude && claude.reply) || templateReply;
-    const source    = claude ? 'claude' : 'template';
-    setTimeout(() => appendAIMessage(replyText, null, source), 400);
+    let replyText = (claude && claude.reply) || templateReply;
+    const source  = claude ? 'claude' : 'template';
+
+    let agentEmphasis = null;
+    if (shouldNudgeEvidence(null) && evidenceGuidanceCount < 2) {
+      replyText += '<br><br><em>💡 If specific context is missing here, you can <strong>📎 Submit evidence</strong> below — substantive submissions go to a priority human reviewer.</em>';
+      agentEmphasis = 'evidence';
+      evidenceGuidanceCount++;
+    }
+
+    setTimeout(() => {
+      appendAIMessage(replyText, () => setTimeout(() => renderChatOptions({ rootIntent: currentRootIntent, agentEmphasis }), 250), source);
+    }, 400);
   });
 }
 
@@ -4515,52 +4629,159 @@ function scrollChat() {
   msgs.scrollTop = msgs.scrollHeight;
 }
 
-function setQuickReplies(buttons, labelText) {
-  const qr = document.getElementById('quick-replies');
-  qr.innerHTML = `<div class="quick-replies-label">${labelText || 'Choose a reply'}</div>`;
-  // Filter out options the user already picked in this session — nav options (alwaysShow) always stay
-  buttons
-    .filter(b => b.alwaysShow || !pickedOptionLabels.has(b.label))
-    .forEach(({ label, onClick, isDanger, isLowlight, alwaysShow }) => {
-      const btn = document.createElement('button');
-      let cls = 'quick-reply-btn';
-      if (isLowlight) cls += ' lowlight';
-      else if (isDanger) cls += ' danger';
-      btn.className = cls;
-      btn.textContent = label;
-      btn.onclick = () => {
-        qr.querySelectorAll('button').forEach(b => b.disabled = true);
-        if (!alwaysShow) pickedOptionLabels.add(label);
-        onClick();
-      };
-      qr.appendChild(btn);
-    });
-}
+// ───────────────────────────────────────────────────────────────
+// Graph-state option renderer
+// Replaces the legacy tree-walk (root → sub → back-to-root). After every AI
+// reply, render TWO groups simultaneously:
+//   (1) Conversation: all 4 root intents + sub-intents of the most recent
+//       intent. Any node is reachable from any node — true graph navigation.
+//   (2) Agent capabilities: 📎 evidence · 📝 appeal · 🧑‍💼 human (G8+ only).
+// AI can flag `agentEmphasis: 'evidence'` to nudge the user toward submitting.
+// ───────────────────────────────────────────────────────────────
 
-function clearQuickReplies(msg) {
-  const qr = document.getElementById('quick-replies');
-  qr.innerHTML = `<div class="quick-replies-label" style="text-align:center;padding:6px 0;">${msg || ''}</div>`;
-}
+const ROOT_INTENT_DEFS = [
+  { key: 'understand', label: '💡 Why was my LIVE flagged?' },
+  { key: 'improve',    label: '📚 How do I avoid this next time?' },
+  { key: 'nextSteps',  label: '⏱️ What happens now?' },
+  { key: 'disagree',   label: '🤔 I have a different view' },
+];
 
-// ── Root intent dispatch ──
-function showRootIntents(prompt) {
-  // Soft loop cap
-  if (chatIntentHistory.length >= 4) {
-    setQuickReplies([
-      { label: '👋 Close conversation', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.endOfLoops || 'Thanks for chatting. Come back anytime.') },
-    ], 'Enough for now?');
-    return;
+function getSubIntentsFor(rootKey) {
+  const p = chatPolicy;
+  if (!p) return [];
+  if (rootKey === 'understand') {
+    return [
+      { label: '🔍 Show me an example',         action: () => sayAndContinue('Show me an example', renderTemplate(p.understand.withExample), 'understand') },
+      { label: '📄 What exact rule?',            action: () => sayAndContinue('What exact rule?', renderTemplate(p.understand.withRule), 'understand') },
+      { label: '⏱️ Why this specific moment?',  action: () => sayAndContinue('Why this specific moment?', renderTemplate(p.understand.whyThisMoment), 'understand') },
+    ];
   }
-  const intents = getRootIntents();
-  const buttons = intents.map(it => ({
-    label: it.label,
-    isDanger: it.isDanger,
-    isLowlight: it.isLowlight,
-    onClick: () => pickRootIntent(it.key, it.label),
-  }));
-  // Always offer close (in-context exit)
-  buttons.push({ label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.short) });
-  setQuickReplies(buttons, prompt || (chatIntentHistory.length === 0 ? 'What would you like to know?' : 'Anything else?'));
+  if (rootKey === 'improve') {
+    return [{ label: '📖 Show me the guidelines', action: () => sayAndContinue('Show me the guidelines', `Here are the key resources:\n\n${p.improve.resources}`, 'improve') }];
+  }
+  if (rootKey === 'nextSteps') {
+    const canGo = p.nextSteps.canGoLive || p.nextSteps.interruptRestart;
+    return canGo ? [{ label: '▶️ Can I go LIVE now?', action: () => sayAndContinue('Can I go LIVE now?', canGo, 'nextSteps') }] : [];
+  }
+  if (rootKey === 'disagree') {
+    const out = [];
+    if (p.dispute.openContext)   out.push({ label: '🎬 This was taken out of context', action: () => disputePath('openContext', 'This was taken out of context') });
+    if (p.dispute.openNotMine)   out.push({ label: '👤 This wasn\'t me',                action: () => disputePath('openNotMine', 'This wasn\'t me') });
+    if (p.dispute.allowedContent) out.push({ label: '✋ TikTok should allow this',     action: () => disputePath('allowedContent', 'TikTok should allow content like mine') });
+    return out;
+  }
+  return [];
+}
+
+let currentRootIntent = null;          // tracks which root intent context we're in
+let evidenceGuidanceCount = 0;          // how many times AI has nudged to evidence (cap to avoid nagging)
+
+function renderChatOptions(opts) {
+  opts = opts || {};
+  const rootIntent = opts.rootIntent != null ? opts.rootIntent : currentRootIntent;
+  const agentEmphasis = opts.agentEmphasis || null;  // 'evidence' | 'appeal' | null
+  currentRootIntent = rootIntent;
+
+  // ── Conversation row ────────────────────────────────────────
+  const convo = document.getElementById('qr-conversation-btns');
+  convo.innerHTML = '';
+  ROOT_INTENT_DEFS.forEach(it => {
+    const btn = makeQRButton(it.label, () => pickRootIntent(it.key, it.label));
+    if (it.key === rootIntent) btn.classList.add('is-current');
+    convo.appendChild(btn);
+  });
+  // Sub-intents of the current root intent (when present)
+  const subs = rootIntent ? getSubIntentsFor(rootIntent) : [];
+  if (subs.length) {
+    const divider = document.createElement('div');
+    divider.style.cssText = 'font-size:10px;color:var(--text-muted);padding:6px 4px 2px;font-weight:600;letter-spacing:.3px;';
+    divider.textContent = '↓ deeper on this intent';
+    convo.appendChild(divider);
+    subs.forEach(s => convo.appendChild(makeQRButton(s.label, s.action)));
+  }
+  // Always-available navigation
+  const endBtn = makeQRButton('✅ End conversation', () => endChatWith(chatPolicy.closures.short));
+  endBtn.style.opacity = '.85';
+  convo.appendChild(endBtn);
+
+  // ── Agent-capabilities row ──────────────────────────────────
+  const agent = document.getElementById('qr-agent-btns');
+  agent.innerHTML = '';
+  const agentBtns = getAgentActions();
+  agentBtns.forEach(b => {
+    const btn = makeQRButton(b.label, b.action);
+    if (b.key === agentEmphasis) btn.classList.add('agent-emphasis');
+    agent.appendChild(btn);
+  });
+}
+
+function makeQRButton(label, onClick) {
+  const btn = document.createElement('button');
+  btn.className = 'quick-reply-btn';
+  btn.textContent = label;
+  btn.onclick = onClick;
+  return btn;
+}
+
+function getAgentActions() {
+  const out = [];
+  // 📎 Submit evidence — only when in dispute mode (chatMode A) and not yet submitted
+  const vid = currentItem && currentItem.violation_id;
+  const evidenceAlreadySubmitted = vid && evidenceSubmittedPerViolation[vid];
+  if (chatMode === 'A' && !evidenceAlreadySubmitted) {
+    out.push({
+      key: 'evidence',
+      label: '📎 Submit evidence for 2nd look',
+      action: () => triggerEvidenceSubmission(),
+    });
+  }
+  // 📝 File appeal — only when appealable + not yet offered this turn
+  if (chatMode === 'A') {
+    if (chatAppealOffered) {
+      out.push({
+        key: 'appeal',
+        label: '📂 Check on my appeal',
+        action: () => sayAndContinue('Check on my appeal', 'Your appeal has been submitted. A specialist will review and you\'ll be notified within 2–3 days.', currentRootIntent),
+      });
+    } else {
+      out.push({
+        key: 'appeal',
+        label: '📝 File a formal appeal',
+        action: () => triggerChatAppeal(),
+      });
+    }
+  }
+  // 🧑‍💼 Human agent — G8+ only
+  if (currentUser && currentUser.level >= 8) {
+    out.push({
+      key: 'human',
+      label: '🧑‍💼 Talk to a human agent',
+      action: () => openHumanQueue(),
+    });
+  }
+  if (out.length === 0) {
+    // Render a tiny "nothing to do here" hint so the section doesn't look broken
+    out.push({
+      key: 'noop',
+      label: 'No agent actions available for this state',
+      action: () => {},
+    });
+  }
+  return out;
+}
+
+// Compatibility shims so older call sites keep working while we migrate.
+function setQuickReplies(_buttons, _label) { renderChatOptions({ rootIntent: currentRootIntent }); }
+function clearQuickReplies(msg) {
+  document.getElementById('qr-conversation-btns').innerHTML = `<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:10px 0;">${msg || ''}</div>`;
+  document.getElementById('qr-agent-btns').innerHTML = '';
+}
+
+// ── Root intent dispatch (graph-state) ──
+function showRootIntents(_prompt) {
+  // In graph mode, we just refresh the option surface — the user can pick any
+  // root intent, sub-intent, or agent action from any node.
+  renderChatOptions({ rootIntent: null });
 }
 
 function pickRootIntent(key, label) {
@@ -4593,55 +4814,42 @@ function pickRootIntent(key, label) {
   }
 
   callClaudeViaBackend({ intent: disputeIntent }).then(claude => {
-    const replyText = (claude && claude.reply) || templateReply;
-    const source    = claude ? 'claude' : 'template';
-    // Short artificial delay to keep typing indicator visible
+    let replyText = (claude && claude.reply) || templateReply;
+    const source  = claude ? 'claude' : 'template';
+
+    // Evidence-guidance nudge (task: AI consciously guides toward evidence when
+    // dispute signals accumulate). At-most-twice per session to avoid nagging.
+    let agentEmphasis = null;
+    if (shouldNudgeEvidence(disputeIntent) && evidenceGuidanceCount < 2) {
+      replyText += '<br><br><em>💡 If you have specific context the system missed, you can <strong>📎 Submit evidence</strong> below — I\'ll route substantive cases to a priority human reviewer.</em>';
+      agentEmphasis = 'evidence';
+      evidenceGuidanceCount++;
+    }
+
     setTimeout(() => {
-      appendAIMessage(replyText, () => setTimeout(() => showSecondaryIntents(disputeIntent), 250), source);
+      appendAIMessage(replyText, () => setTimeout(() => renderChatOptions({ rootIntent: disputeIntent, agentEmphasis }), 250), source);
     }, 600);
   });
 }
 
-function showSecondaryIntents(rootKey) {
-  const p = chatPolicy;
-  let buttons = [];
-
-  if (rootKey === 'understand') {
-    buttons = [
-      { label: '🔍 Show me an example', onClick: () => sayAndContinue('Show me an example', renderTemplate(p.understand.withExample)) },
-      { label: '📄 What exact rule?', onClick: () => sayAndContinue('What exact rule?', renderTemplate(p.understand.withRule)) },
-      { label: '⏱️ Why this specific moment?', onClick: () => sayAndContinue('Why this specific moment?', renderTemplate(p.understand.whyThisMoment)) },
-    ];
-  } else if (rootKey === 'dispute') {
-    // Mode A only: offer triage sub-intents that can route to appeal
-    buttons = [];
-    if (p.dispute.openContext) buttons.push({ label: 'This was taken out of context', onClick: () => disputePath('openContext', 'This was taken out of context') });
-    if (p.dispute.openNotMine) buttons.push({ label: 'This wasn\'t me', onClick: () => disputePath('openNotMine', 'This wasn\'t me') });
-    if (p.dispute.allowedContent) buttons.push({ label: 'TikTok should allow this', onClick: () => disputePath('allowedContent', 'TikTok should allow content like mine') });
-  } else if (rootKey === 'improve') {
-    buttons = [
-      { label: '📖 Show me the guidelines', onClick: () => sayAndContinue('Show me the guidelines', `Here are the key resources:\n\n${p.improve.resources}`) },
-    ];
-  } else if (rootKey === 'nextSteps') {
-    const canGoLive = p.nextSteps.canGoLive || p.nextSteps.interruptRestart;
-    if (canGoLive) {
-      buttons = [
-        { label: '▶️ Can I go LIVE now?', onClick: () => sayAndContinue('Can I go LIVE now?', canGoLive) },
-      ];
-    }
-  }
-
-  // Always offer navigation
-  buttons.push({ label: '↩️ Ask something else', alwaysShow: true, onClick: () => showRootIntents('What else would you like to know?') });
-  buttons.push({ label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.short) });
-  setQuickReplies(buttons);
+// Disagreement signal heuristic — accumulate clues that the user wants to
+// dispute, so the AI can subtly point to the evidence channel when relevant.
+let disputeSignalCount = 0;
+function shouldNudgeEvidence(intentKey) {
+  if (intentKey === 'disagree' || intentKey === 'dispute') disputeSignalCount++;
+  if ((layer1Counts.down || 0) >= 2)                       disputeSignalCount++;
+  return disputeSignalCount >= 1;
 }
 
-function sayAndContinue(userText, aiReply) {
+// Legacy function kept as a no-op shim so any stray callers don't crash.
+// Graph-state UX renders all options through renderChatOptions() instead.
+function showSecondaryIntents(rootKey) { renderChatOptions({ rootIntent: rootKey }); }
+
+function sayAndContinue(userText, aiReply, keepRootIntent) {
   appendUserMessage(userText);
   showTyping();
   setTimeout(() => {
-    appendAIMessage(aiReply, () => setTimeout(() => showRootIntents('Anything else?'), 250));
+    appendAIMessage(aiReply, () => setTimeout(() => renderChatOptions({ rootIntent: keepRootIntent || currentRootIntent }), 250));
   }, 1000);
 }
 
@@ -4659,24 +4867,14 @@ function disputePath(subKey, userText) {
   showTyping();
   const p = chatPolicy;
   const reply = renderTemplate(p.dispute[subKey]);
+  // Disagreement signal — drives evidence emphasis on render.
+  disputeSignalCount++;
+  // Pre-suggest the dispute pre-fill index so File-appeal modal lands on the right reason.
+  appealSuggestedReasonIdx = DISPUTE_TO_REASON_IDX[subKey] != null ? DISPUTE_TO_REASON_IDX[subKey] : appealSuggestedReasonIdx;
   setTimeout(() => {
     appendAIMessage(reply, () => setTimeout(() => {
-      // PRD §2.1 / §5: dispute triage offers three equal-weight follow-ups —
-      // understand, submit evidence (task 1.4 · high threshold), file appeal.
-      const buttons = [];
-      buttons.push({ label: '💡 Actually, I understand now', onClick: () => sayAndContinue('I understand now', chatPolicy.closures.short) });
-      if (chatMode === 'A') {
-        buttons.push({ label: '📎 Submit evidence for 2nd look', onClick: () => triggerEvidenceSubmission() });
-      }
-      buttons.push({ label: '↩️ Ask something else', alwaysShow: true, onClick: () => showRootIntents('What else?') });
-      buttons.push({ label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.short) });
-      if (chatMode === 'A' && chatAppealOffered) {
-        buttons.push({ label: 'Check on my appeal', onClick: () => sayAndContinue('Check on my appeal', 'Your appeal has been submitted. A specialist will review and you\'ll be notified within 2–3 days.') });
-      } else if (chatMode === 'A' && !chatAppealOffered) {
-        const suggestedIdx = DISPUTE_TO_REASON_IDX[subKey];
-        buttons.push({ label: '📝 File a formal appeal', onClick: () => triggerChatAppeal(suggestedIdx) });
-      }
-      setQuickReplies(buttons);
+      // Graph-state · render the full option surface, with Submit evidence emphasised.
+      renderChatOptions({ rootIntent: 'disagree', agentEmphasis: 'evidence' });
     }, 250));
   }, 1100);
 }
@@ -4691,10 +4889,8 @@ function triggerChatAppeal(suggestedReasonIdx) {
     appendAIMessage(`I'll open the appeal form now.${selNote} Pick a reason below — your chat context goes to the reviewer, but you write your own statement.`, () => setTimeout(() => {
       if (typeof suggestedReasonIdx === 'number') appealSuggestedReasonIdx = suggestedReasonIdx;
       openAppealModal();
-      setQuickReplies([
-        { label: '↩️ Back to questions', alwaysShow: true, onClick: () => showRootIntents('What else?') },
-        { label: '✅ I\'m done', alwaysShow: true, onClick: () => endChatWith(chatPolicy.closures.withAppeal) },
-      ]);
+      // Re-render graph options — appeal flag flips to "Check on my appeal" automatically
+      renderChatOptions({ rootIntent: currentRootIntent });
     }, 250));
   }, 900);
 }

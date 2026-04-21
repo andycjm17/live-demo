@@ -27,6 +27,12 @@ from urllib.parse import urlparse, parse_qs, unquote
 # If ANTHROPIC_API_KEY isn't set, /api/chat/complete returns 503 and the
 # frontend falls back to the hardcoded POLICY_* templates.
 # ──────────────────────────────────────────────────────────────────
+# API key is read from ANTHROPIC_API_KEY env var. Render deploys inject it via
+# the Blueprint; for local use: `export ANTHROPIC_API_KEY=sk-ant-...` before
+# running `python3 server.py`. When absent, the demo falls back to hardcoded
+# policy templates (each AI bubble shows a "📋 Template fallback" badge).
+# (Previously baked into source for local convenience — moved to env-var-only
+# because GitHub's secret-scanning rightly blocks committed keys.)
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '').strip()
 CLAUDE_MODEL      = os.environ.get('CLAUDE_MODEL', 'claude-sonnet-4-6')
 CLAUDE_API_URL    = 'https://api.anthropic.com/v1/messages'
