@@ -1,0 +1,10 @@
+# Runtime artefacts (mock backend)
+aiinsight.db
+aiinsight.db-journal
+
+# Local Claude Code tooling
+.claude/
+
+# OS / editor junk
+.DS_Store
+*.swp
