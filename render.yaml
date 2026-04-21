@@ -1,35 +1,36 @@
 # Render.com blueprint for the TikTok LIVE · AI Insight demo.
 #
-# One-click deploy flow:
-#   1. Push this repo to GitHub (already done at github.com/andycjm17/live-demo).
-#   2. Render.com → New → Blueprint → connect this repo → Render auto-detects this file.
-#   3. In the "Environment" step, paste your ANTHROPIC_API_KEY into the secret field
-#      (sync: false below means Render prompts for it instead of reading from this file).
-#   4. Deploy. First build ≈ 2-3 min. Render returns a URL like
-#      https://ai-insight-demo.onrender.com that you can share.
+# Deploy flow (Blueprint path — the one that actually works end-to-end):
+#   1. Go to https://dashboard.render.com/select-repo?type=blueprint
+#      (equivalent UI path:  Dashboard → New + → Blueprint)
+#   2. Select this GitHub repo (andycjm17/live-demo, branch: main).
+#   3. Render parses this file and shows a preview titled "ai-insight-demo".
+#   4. In the "Environment" step, paste your ANTHROPIC_API_KEY into the secret
+#      field (sync: false below means Render prompts for it).
+#   5. Click "Apply". First build ≈ 2-3 min. Final URL like
+#      https://ai-insight-demo.onrender.com becomes your shareable link.
 #
 # Free-tier notes:
-#   - Service spins down after 15 min of inactivity (cold start ≈ 30 s on first visit).
+#   - Service spins down after 15 min of inactivity (cold start ≈ 30 s).
 #   - No persistent disk → aiinsight.db is ephemeral. The dashboard's
-#     "🌱 Seed 100 mock conversations" button repopulates in ~6 s after any reset.
-#
-# Upgrading: add `plan: starter` + a `disks:` block with mountPath: /opt/render/project/src
-# if you ever need persistent event history.
+#     "🌱 Seed 100 mock conversations" button repopulates in ~6 s.
 
 services:
   - type: web
     name: ai-insight-demo
     runtime: python
-    region: oregon            # change to `frankfurt` / `singapore` / `ohio` / `virginia` if closer
+    region: oregon           # change to frankfurt / singapore / ohio / virginia if closer
     plan: free
-    buildCommand: ""          # pure Python stdlib — nothing to pip install
+    branch: main
+    buildCommand: pip install -r requirements.txt
     startCommand: python3 server.py
+    healthCheckPath: /api/admin/llm-status
     envVars:
-      - key: PORT
-        generateValue: true   # Render injects the real port; server.py reads os.environ['PORT']
+      - key: PYTHON_VERSION
+        value: "3.11"
       - key: CLAUDE_MODEL
         value: claude-sonnet-4-6
       - key: ANTHROPIC_API_KEY
-        sync: false           # secret — paste via Render dashboard, not in this file
+        sync: false           # secret — Render prompts for this, don't paste it in this file
       - key: EVIDENCE_CONFIDENCE_THRESHOLD
         value: "0.85"         # ops-tunable threshold for the evidence-submission path
